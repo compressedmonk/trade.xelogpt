@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createChart, CandlestickSeries, HistogramSeries, type IChartApi } from "lightweight-charts";
+import { createChart, type IChartApi } from "lightweight-charts";
 
 interface KlineBar {
   time: number;
@@ -50,7 +50,7 @@ export function KlineChart({ address }: { address: string }) {
 
     chartRef.current = chart;
 
-    const candleSeries = chart.addSeries(CandlestickSeries, {
+    const candleSeries = chart.addCandlestickSeries({
       upColor: "#22c55e",
       downColor: "#ef4444",
       borderUpColor: "#22c55e",
@@ -59,9 +59,9 @@ export function KlineChart({ address }: { address: string }) {
       wickDownColor: "#ef4444",
     });
 
-    const volumeSeries = chart.addSeries(HistogramSeries, {
+    const volumeSeries = chart.addHistogramSeries({
       priceFormat: { type: "volume" },
-      priceScaleId: "",
+      priceScaleId: "volume",
     });
 
     volumeSeries.priceScale().applyOptions({
