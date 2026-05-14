@@ -90,8 +90,17 @@ export async function getTrending(chain: string, interval: string, opts: {
   return gmgnGet<{ rank: TokenRank[] }>("/v1/market/rank", { chain, interval, ...opts });
 }
 
-export async function getKline(chain: string, address: string, resolution: string, from?: number, to?: number) {
-  return gmgnGet("/v1/market/token_kline", { chain, address, resolution, from, to });
+export async function getKline(chain: string, address: string, resolution: string = "15m") {
+  return gmgnGet<{ list: KlineBar[] }>("/v1/market/token_kline", { chain, address, resolution });
+}
+
+export interface KlineBar {
+  time: number;
+  open: string;
+  close: string;
+  high: string;
+  low: string;
+  volume: string;
 }
 
 export async function getTrenches(chain: string, types?: string[], limit?: number) {

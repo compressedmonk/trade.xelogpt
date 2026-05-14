@@ -1,6 +1,7 @@
 "use client";
 
 import { formatPrice, formatMarketCap, timeAgo } from "@/lib/scoring";
+import { KlineChart } from "@/components/KlineChart";
 
 function SecurityBadge({ label, safe, warning, danger }: { label: string; safe?: boolean; warning?: boolean; danger?: boolean }) {
   let color = "text-gray-500";
@@ -87,6 +88,9 @@ export function TokenDetail({
         <InfoCard label="KOLs" value={String(walletTags.renowned_wallets ?? "—")} accent="purple" />
         <InfoCard label="Snipers" value={String(walletTags.sniper_wallets ?? "—")} accent="red" />
       </div>
+
+      {/* K-line Chart */}
+      <KlineChart address={address} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Security scorecard */}
