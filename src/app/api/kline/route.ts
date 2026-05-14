@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getKline } from "@/lib/gmgn-client";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const address = req.nextUrl.searchParams.get("address");
   const resolution = req.nextUrl.searchParams.get("resolution") || "15m";

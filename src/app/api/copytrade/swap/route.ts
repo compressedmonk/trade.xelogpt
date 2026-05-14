@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { executeSwap, queryOrder } from "@/lib/gmgn-signer";
+import { executeSwap } from "@/lib/gmgn-signer";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 
