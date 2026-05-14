@@ -21,6 +21,14 @@ function buildUrl(path: string, params: Record<string, string | number | undefin
   return url.toString();
 }
 
+function unwrapData(raw: unknown): unknown {
+  const obj = raw as Record<string, unknown>;
+  if (obj && typeof obj === "object" && "code" in obj && "data" in obj && obj.code === 0) {
+    return obj.data;
+  }
+  return obj;
+}
+
 async function gmgnGet<T = unknown>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
   const url = buildUrl(path, params);
   const res = await fetch(url, {
@@ -31,7 +39,7 @@ async function gmgnGet<T = unknown>(path: string, params: Record<string, string 
   if (json.code !== 0) {
     throw new Error(`GMGN API error: ${json.error ?? json.message ?? JSON.stringify(json)}`);
   }
-  return json.data as T;
+  return unwrapData(json.data) as T;
 }
 
 async function gmgnPost<T = unknown>(path: string, params: Record<string, string | number | undefined>, body: unknown): Promise<T> {
@@ -45,7 +53,7 @@ async function gmgnPost<T = unknown>(path: string, params: Record<string, string
   if (json.code !== 0) {
     throw new Error(`GMGN API error: ${json.error ?? json.message ?? JSON.stringify(json)}`);
   }
-  return json.data as T;
+  return unwrapData(json.data) as T;
 }
 
 // ---- Token endpoints ----
