@@ -33,17 +33,17 @@ export function TrenchesClient({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold">Trenches — New Tokens</h1>
-        <div className="flex bg-brand-card rounded border border-brand-border">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gradient">Trenches — New Tokens</h1>
+        <div className="flex glass rounded-lg overflow-hidden">
           {TABS.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-3 py-1 text-sm font-medium transition-colors ${
+              className={`px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
                 tab === t.key
-                  ? "bg-brand-green/10 text-brand-green"
-                  : "text-gray-500 hover:text-gray-300"
+                  ? "bg-cyan-500/15 text-cyan-400 shadow-glow-sm"
+                  : "text-gray-500 hover:text-cyan-300 hover:bg-white/[0.04]"
               }`}
             >
               {t.emoji} {t.label}

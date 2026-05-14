@@ -9,7 +9,7 @@ export function scoreToken(t: TokenRank): Signal {
 }
 
 export function signalColor(s: Signal) {
-  return s === "pass" ? "text-brand-green" : s === "skip" ? "text-brand-red" : "text-brand-yellow";
+  return s === "pass" ? "text-cyan-400" : s === "skip" ? "text-brand-red" : "text-brand-yellow";
 }
 
 export function signalLabel(s: Signal) {

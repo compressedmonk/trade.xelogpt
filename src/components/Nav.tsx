@@ -14,18 +14,18 @@ export function Nav() {
   const path = usePathname();
 
   return (
-    <nav className="flex items-center gap-1 px-4 py-2 border-b border-brand-border bg-brand-card/80 backdrop-blur-sm">
-      <Link href="/trending" className="text-lg font-bold text-brand-green mr-6 tracking-tight">
-        SolTrade
+    <nav className="sticky top-0 z-50 flex items-center gap-1 px-5 py-3 glass-strong border-t-0 border-x-0 rounded-none">
+      <Link href="/trending" className="text-lg font-bold text-cyan-400 text-glow mr-6 tracking-tight">
+        Litt-Analyzer
       </Link>
       {links.map((l) => (
         <Link
           key={l.href}
           href={l.href}
-          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
             path?.startsWith(l.href)
-              ? "bg-brand-green/10 text-brand-green"
-              : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+              ? "bg-cyan-500/10 text-cyan-400 shadow-glow-sm"
+              : "text-gray-400 hover:text-cyan-300 hover:bg-white/[0.04]"
           }`}
         >
           {l.label}

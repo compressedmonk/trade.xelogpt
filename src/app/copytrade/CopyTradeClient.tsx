@@ -128,7 +128,7 @@ export function CopyTradeClient() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Copy Trade</h1>
+      <h1 className="text-2xl font-bold text-gradient">Copy Trade</h1>
 
       {/* Tabs */}
       <div className="flex gap-2">
@@ -136,8 +136,10 @@ export function CopyTradeClient() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-1.5 text-sm rounded-lg transition-colors ${
-              tab === t ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-800"
+            className={`px-4 py-1.5 text-sm rounded-lg font-medium transition-all duration-200 ${
+              tab === t
+                ? "bg-cyan-500/15 text-cyan-400 shadow-glow-sm"
+                : "text-gray-400 hover:text-cyan-300 hover:bg-white/[0.04]"
             }`}
           >
             {t === "wallets" ? "Followed Wallets" : t === "logs" ? "Trade Log" : "Manual Swap"}
@@ -145,68 +147,70 @@ export function CopyTradeClient() {
         ))}
       </div>
 
-      {loading && <p className="text-gray-500 animate-pulse">Loading...</p>}
+      {loading && <p className="text-cyan-400/60 animate-pulse">Loading...</p>}
 
       {/* Followed wallets */}
       {tab === "wallets" && !loading && (
         <div className="space-y-4">
-          {/* Add form */}
-          <div className="bg-brand-card border border-brand-border rounded-lg p-4 space-y-3">
-            <h2 className="text-sm font-bold text-gray-400 uppercase">Add Wallet to Follow</h2>
+          <div className="glass rounded-xl p-5 space-y-4">
+            <h2 className="text-sm font-bold text-cyan-400 uppercase tracking-wider">Add Wallet to Follow</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <input
                 value={newWallet}
                 onChange={(e) => setNewWallet(e.target.value)}
                 placeholder="Wallet address"
-                className="bg-gray-900 border border-brand-border rounded px-3 py-2 text-sm text-white placeholder-gray-600 font-mono"
+                className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500/30 focus:border-cyan-500/20 transition-all"
               />
               <input
                 value={newLabel}
                 onChange={(e) => setNewLabel(e.target.value)}
                 placeholder="Label (optional)"
-                className="bg-gray-900 border border-brand-border rounded px-3 py-2 text-sm text-white placeholder-gray-600"
+                className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 focus:border-cyan-500/20 transition-all"
               />
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="text-[10px] text-gray-500 uppercase">Max SOL</label>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider">Max SOL</label>
                   <input
                     value={newMaxSol}
                     onChange={(e) => setNewMaxSol(e.target.value)}
-                    className="w-full bg-gray-900 border border-brand-border rounded px-3 py-2 text-sm text-white"
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-[10px] text-gray-500 uppercase">Slippage %</label>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider">Slippage %</label>
                   <input
                     value={newSlippage}
                     onChange={(e) => setNewSlippage(e.target.value)}
-                    className="w-full bg-gray-900 border border-brand-border rounded px-3 py-2 text-sm text-white"
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all"
                   />
                 </div>
               </div>
               <button
                 onClick={addWallet}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white rounded px-4 py-2 text-sm font-medium transition-colors"
+                className="btn-accent rounded-lg px-4 py-2.5 text-sm"
               >
                 + Add Wallet
               </button>
             </div>
           </div>
 
-          {/* Config list */}
           {configs.length === 0 ? (
             <p className="text-gray-600 text-sm">No wallets being followed</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {configs.map((c) => (
                 <div
                   key={c.id}
-                  className="bg-brand-card border border-brand-border rounded-lg p-4 flex items-center gap-4"
+                  className="glass glass-hover rounded-xl p-4 flex items-center gap-4"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-white font-medium text-sm">{c.label ?? "Unnamed"}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${c.enabled ? "bg-green-500/10 text-green-400" : "bg-gray-700 text-gray-500"}`}>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${
+                        c.enabled
+                          ? "bg-brand-green/10 text-brand-green shadow-[0_0_8px_rgba(52,211,153,0.15)]"
+                          : "bg-white/[0.06] text-gray-500"
+                      }`}>
                         {c.enabled ? "ACTIVE" : "PAUSED"}
                       </span>
                     </div>
@@ -219,17 +223,17 @@ export function CopyTradeClient() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => toggleConfig(c.id, !c.enabled)}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                         c.enabled
-                          ? "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20"
-                          : "bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                          ? "bg-brand-yellow/10 text-brand-yellow hover:bg-brand-yellow/20"
+                          : "bg-brand-green/10 text-brand-green hover:bg-brand-green/20"
                       }`}
                     >
                       {c.enabled ? "Pause" : "Resume"}
                     </button>
                     <button
                       onClick={() => removeConfig(c.id)}
-                      className="px-3 py-1 rounded text-xs font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-red/10 text-brand-red hover:bg-brand-red/20 transition-all duration-200"
                     >
                       Remove
                     </button>
@@ -243,10 +247,10 @@ export function CopyTradeClient() {
 
       {/* Trade log */}
       {tab === "logs" && !loading && (
-        <div className="bg-brand-card border border-brand-border rounded-lg overflow-hidden">
+        <div className="glass rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-brand-border text-gray-500 text-xs uppercase">
+              <tr className="text-gray-500 text-xs uppercase bg-white/[0.02]">
                 <th className="text-left p-3">Time</th>
                 <th className="text-left p-3">Token</th>
                 <th className="text-left p-3">Side</th>
@@ -264,7 +268,7 @@ export function CopyTradeClient() {
                 </tr>
               ) : (
                 logs.map((l) => (
-                  <tr key={l.id} className="border-b border-brand-border/30 hover:bg-white/[0.02]">
+                  <tr key={l.id} className="border-t border-white/[0.04] hover:bg-cyan-500/[0.03] transition-colors duration-150">
                     <td className="p-3 text-gray-500 text-xs">
                       {new Date(l.createdAt).toLocaleString()}
                     </td>
@@ -275,7 +279,9 @@ export function CopyTradeClient() {
                       </span>
                     </td>
                     <td className="p-3">
-                      <span className={l.side === "buy" ? "text-brand-green" : "text-brand-red"}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                        l.side === "buy" ? "bg-brand-green/10 text-brand-green" : "bg-brand-red/10 text-brand-red"
+                      }`}>
                         {l.side.toUpperCase()}
                       </span>
                     </td>
@@ -296,51 +302,51 @@ export function CopyTradeClient() {
 
       {/* Manual swap */}
       {tab === "manual" && !loading && (
-        <div className="bg-brand-card border border-brand-border rounded-lg p-4 space-y-4 max-w-lg">
-          <h2 className="text-sm font-bold text-gray-400 uppercase">Manual Swap</h2>
+        <div className="glass rounded-xl p-5 space-y-4 max-w-lg">
+          <h2 className="text-sm font-bold text-cyan-400 uppercase tracking-wider">Manual Swap</h2>
           <p className="text-xs text-gray-600">
             Execute a swap through the GMGN API. Requires GMGN_PRIVATE_KEY configured.
           </p>
 
           <div className="space-y-3">
             <div>
-              <label className="text-[10px] text-gray-500 uppercase">Your Wallet Address</label>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">Your Wallet Address</label>
               <input
                 value={manualWallet}
                 onChange={(e) => setManualWallet(e.target.value)}
                 placeholder="Your SOL wallet address (bound to API key)"
-                className="w-full bg-gray-900 border border-brand-border rounded px-3 py-2 text-sm text-white placeholder-gray-600 font-mono"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all"
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 uppercase">Token Address</label>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">Token Address</label>
               <input
                 value={manualToken}
                 onChange={(e) => setManualToken(e.target.value)}
                 placeholder="Token contract address"
-                className="w-full bg-gray-900 border border-brand-border rounded px-3 py-2 text-sm text-white placeholder-gray-600 font-mono"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all"
               />
             </div>
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="text-[10px] text-gray-500 uppercase">Side</label>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider">Side</label>
                 <div className="flex gap-2 mt-1">
                   <button
                     onClick={() => setManualSide("buy")}
-                    className={`flex-1 py-2 rounded text-sm font-medium transition-colors ${
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       manualSide === "buy"
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-800 text-gray-500 hover:text-white"
+                        ? "bg-brand-green/20 text-brand-green border border-brand-green/20"
+                        : "bg-white/[0.04] text-gray-500 border border-white/[0.08] hover:text-white"
                     }`}
                   >
                     BUY
                   </button>
                   <button
                     onClick={() => setManualSide("sell")}
-                    className={`flex-1 py-2 rounded text-sm font-medium transition-colors ${
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       manualSide === "sell"
-                        ? "bg-red-600 text-white"
-                        : "bg-gray-800 text-gray-500 hover:text-white"
+                        ? "bg-brand-red/20 text-brand-red border border-brand-red/20"
+                        : "bg-white/[0.04] text-gray-500 border border-white/[0.08] hover:text-white"
                     }`}
                   >
                     SELL
@@ -348,22 +354,22 @@ export function CopyTradeClient() {
                 </div>
               </div>
               <div className="flex-1">
-                <label className="text-[10px] text-gray-500 uppercase">Amount (SOL)</label>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider">Amount (SOL)</label>
                 <input
                   value={manualAmount}
                   onChange={(e) => setManualAmount(e.target.value)}
-                  className="w-full bg-gray-900 border border-brand-border rounded px-3 py-2 text-sm text-white mt-1"
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all"
                 />
               </div>
             </div>
             <button
               onClick={manualSwap}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded px-4 py-2.5 text-sm font-medium transition-colors"
+              className="w-full btn-accent rounded-lg px-4 py-3 text-sm"
             >
               Execute Swap
             </button>
             {swapStatus && (
-              <p className={`text-xs ${swapStatus.includes("Error") || swapStatus.includes("Failed") ? "text-red-400" : "text-green-400"}`}>
+              <p className={`text-xs ${swapStatus.includes("Error") || swapStatus.includes("Failed") ? "text-brand-red" : "text-brand-green"}`}>
                 {swapStatus}
               </p>
             )}
@@ -376,13 +382,13 @@ export function CopyTradeClient() {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    pending: "bg-yellow-500/10 text-yellow-400",
-    submitted: "bg-blue-500/10 text-blue-400",
-    confirmed: "bg-green-500/10 text-green-400",
-    failed: "bg-red-500/10 text-red-400",
+    pending: "bg-brand-yellow/10 text-brand-yellow",
+    submitted: "bg-cyan-500/10 text-cyan-400",
+    confirmed: "bg-brand-green/10 text-brand-green shadow-[0_0_8px_rgba(52,211,153,0.15)]",
+    failed: "bg-brand-red/10 text-brand-red",
   };
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${colors[status] ?? "bg-gray-700 text-gray-400"}`}>
+    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${colors[status] ?? "bg-white/[0.06] text-gray-400"}`}>
       {status.toUpperCase()}
     </span>
   );

@@ -34,18 +34,18 @@ export function TrendingClient({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold">Trending — Solana</h1>
-        <div className="flex items-center gap-2">
-          <div className="flex bg-brand-card rounded border border-brand-border">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gradient">Trending — Solana</h1>
+        <div className="flex items-center gap-3">
+          <div className="flex glass rounded-lg overflow-hidden">
             {INTERVALS.map((i) => (
               <button
                 key={i.key}
                 onClick={() => setInterval(i.key)}
-                className={`px-3 py-1 text-sm font-medium transition-colors ${
+                className={`px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
                   interval === i.key
-                    ? "bg-brand-green/10 text-brand-green"
-                    : "text-gray-500 hover:text-gray-300"
+                    ? "bg-cyan-500/15 text-cyan-400 shadow-glow-sm"
+                    : "text-gray-500 hover:text-cyan-300 hover:bg-white/[0.04]"
                 }`}
               >
                 {i.label}
@@ -55,7 +55,7 @@ export function TrendingClient({
           <select
             value={filterSignal}
             onChange={(e) => setFilterSignal(e.target.value as typeof filterSignal)}
-            className="bg-brand-card border border-brand-border rounded px-2 py-1 text-sm text-gray-300"
+            className="glass rounded-lg px-3 py-1.5 text-sm text-gray-300 outline-none focus:ring-1 focus:ring-cyan-500/30"
           >
             <option value="all">All Signals</option>
             <option value="pass">PASS only</option>
