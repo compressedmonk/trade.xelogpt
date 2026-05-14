@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Watchlist {
+  id        Int      @id @default(autoincrement())
+  address   String
+  chain     String   @default("sol")
+  symbol    String?
+  name      String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([address, chain])
+}
+
+model Alert {
+  id        Int      @id @default(autoincrement())
+  type      String
+  address   String?
+  chain     String   @default("sol")
+  condition String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model CopyTradeConfig {
+  id              Int      @id @default(autoincrement())
+  walletAddress   String
+  chain           String   @default("sol")
+  label           String?
+  enabled         Boolean  @default(true)
+  maxPositionSol  Float    @default(0.1)
+  slippage        Float    @default(0.5)
+  autoTp          Float?
+  autoSl          Float?
+  createdAt       DateTime @default(now())
+
+  @@unique([walletAddress, chain])
+}
+
+model TradeLog {
+  id            Int      @id @default(autoincrement())
+  orderId       String?
+  chain         String   @default("sol")
+  tokenAddress  String
+  tokenSymbol   String?
+  side          String
+  amountSol     Float
+  amountToken   Float?
+  price         Float?
+  status        String   @default("pending")
+  source        String?
+  triggeredBy   String?
+  createdAt     DateTime @default(now())
+}

@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    container_name: soltrade_web
+    ports:
+      - "3300:3000"
+    environment:
+      - GMGN_API_KEY=${GMGN_API_KEY}
+      - DATABASE_URL=file:./dev.db
+    restart: unless-stopped
