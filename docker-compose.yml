@@ -10,7 +10,7 @@ services:
       - DATABASE_URL=file:./dev.db
     volumes:
       - dbdata:/app/prisma
+    restart: unless-stopped
 
 volumes:
   dbdata:
-    restart: unless-stopped
