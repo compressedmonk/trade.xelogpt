@@ -51,8 +51,10 @@ export function TokenDetail({
     return <p className="text-center text-gray-500 py-12">Token not found or API error</p>;
   }
 
-  const price = info.price ?? 0;
-  const mcap = (info.price ?? 0) * (info.circulating_supply ?? info.total_supply ?? 0);
+  const priceNum = typeof info.price === "object" ? parseFloat(info.price?.price ?? "0") : Number(info.price ?? 0);
+  const supply = parseFloat(info.circulating_supply ?? info.total_supply ?? "0");
+  const mcap = priceNum * supply;
+  const liq = parseFloat(info.liquidity ?? "0");
   const holderList = holders?.list ?? holders ?? [];
   const signalList: any[] = Array.isArray(signals) ? signals : (signals?.list ?? []);
   const tokenSignals = signalList.filter((s: any) => s.token_address === address).slice(0, 10);
@@ -72,14 +74,14 @@ export function TokenDetail({
           <p className="text-sm text-gray-500">{info.name}</p>
         </div>
         <div className="ml-auto text-right">
-          <p className="text-2xl font-bold font-mono">{formatPrice(price)}</p>
+          <p className="text-2xl font-bold font-mono">{formatPrice(priceNum)}</p>
           <p className="text-sm text-gray-500">MCap: {formatMarketCap(mcap)}</p>
         </div>
       </div>
 
       {/* Info cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <InfoCard label="Liquidity" value={formatMarketCap(info.liquidity ?? 0)} />
+        <InfoCard label="Liquidity" value={formatMarketCap(liq)} />
         <InfoCard label="Holders" value={String(info.holder_count ?? "—")} />
         <InfoCard label="Smart Money" value={String(walletTags.smart_wallets ?? "—")} accent="green" />
         <InfoCard label="KOLs" value={String(walletTags.renowned_wallets ?? "—")} accent="purple" />
@@ -97,16 +99,16 @@ export function TokenDetail({
             <SecurityBadge label="Mint Renounced" safe={!!security.renounced_mint} danger={!security.renounced_mint} />
             <SecurityBadge label="Freeze Renounced" safe={!!security.renounced_freeze_account} danger={!security.renounced_freeze_account} />
             <SecurityBadge
-              label={`Rug Ratio: ${((security.rug_ratio ?? 0) * 100).toFixed(0)}%`}
-              safe={(security.rug_ratio ?? 0) < 0.1}
-              warning={(security.rug_ratio ?? 0) >= 0.1 && (security.rug_ratio ?? 0) <= 0.3}
-              danger={(security.rug_ratio ?? 0) > 0.3}
+              label={`Rug Ratio: ${(parseFloat(security.rug_ratio ?? "0") * 100).toFixed(0)}%`}
+              safe={parseFloat(security.rug_ratio ?? "0") < 0.1}
+              warning={parseFloat(security.rug_ratio ?? "0") >= 0.1 && parseFloat(security.rug_ratio ?? "0") <= 0.3}
+              danger={parseFloat(security.rug_ratio ?? "0") > 0.3}
             />
             <SecurityBadge
-              label={`Top 10: ${((security.top_10_holder_rate ?? 0) * 100).toFixed(0)}%`}
-              safe={(security.top_10_holder_rate ?? 0) < 0.2}
-              warning={(security.top_10_holder_rate ?? 0) >= 0.2 && (security.top_10_holder_rate ?? 0) <= 0.5}
-              danger={(security.top_10_holder_rate ?? 0) > 0.5}
+              label={`Top 10: ${(parseFloat(security.top_10_holder_rate ?? "0") * 100).toFixed(0)}%`}
+              safe={parseFloat(security.top_10_holder_rate ?? "0") < 0.2}
+              warning={parseFloat(security.top_10_holder_rate ?? "0") >= 0.2 && parseFloat(security.top_10_holder_rate ?? "0") <= 0.5}
+              danger={parseFloat(security.top_10_holder_rate ?? "0") > 0.5}
             />
             <SecurityBadge
               label={`Dev: ${security.creator_token_status ?? "unknown"}`}
@@ -173,10 +175,10 @@ export function TokenDetail({
 
           {/* Risk ratios */}
           <div className="border-t border-brand-border/30 pt-3 mt-3 space-y-1">
-            <RiskBar label="Insider traders" value={stat.top_rat_trader_percentage ?? 0} />
-            <RiskBar label="Bundler bots" value={stat.top_bundler_trader_percentage ?? 0} />
-            <RiskBar label="Fresh wallets" value={stat.fresh_wallet_rate ?? 0} />
-            <RiskBar label="Bot degens" value={stat.bot_degen_rate ?? 0} />
+            <RiskBar label="Insider traders" value={parseFloat(stat.top_rat_trader_percentage ?? "0")} />
+            <RiskBar label="Bundler bots" value={parseFloat(stat.top_bundler_trader_percentage ?? "0")} />
+            <RiskBar label="Fresh wallets" value={parseFloat(stat.fresh_wallet_rate ?? "0")} />
+            <RiskBar label="Bot degens" value={parseFloat(stat.bot_degen_rate ?? "0")} />
           </div>
         </div>
 
@@ -193,8 +195,8 @@ export function TokenDetail({
                   <span className="text-gray-300">
                     {((h.amount_percentage ?? 0) * 100).toFixed(2)}%
                   </span>
-                  <span className={h.profit >= 0 ? "text-brand-green" : "text-brand-red"}>
-                    {h.profit != null ? `$${h.profit.toFixed(0)}` : "—"}
+                  <span className={Number(h.profit ?? 0) >= 0 ? "text-brand-green" : "text-brand-red"}>
+                    {h.profit != null ? `$${Number(h.profit).toFixed(0)}` : "—"}
                   </span>
                 </div>
               ))}
