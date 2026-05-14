@@ -6,5 +6,11 @@ services:
       - "3300:3000"
     environment:
       - GMGN_API_KEY=${GMGN_API_KEY}
+      - GMGN_PRIVATE_KEY=${GMGN_PRIVATE_KEY:-}
       - DATABASE_URL=file:./dev.db
+    volumes:
+      - dbdata:/app/prisma
+
+volumes:
+  dbdata:
     restart: unless-stopped
