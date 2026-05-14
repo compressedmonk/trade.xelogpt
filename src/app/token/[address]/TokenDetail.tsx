@@ -40,6 +40,7 @@ export function TokenDetail({
   info,
   security,
   holders,
+  kolTraders,
   signals,
 }: {
   address: string;
