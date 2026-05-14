@@ -5,6 +5,9 @@ import type { TokenRank } from "@/lib/gmgn-client";
 import { scoreToken, signalColor, signalLabel, formatPrice, formatMarketCap, formatVolume, formatPercent, timeAgo } from "@/lib/scoring";
 
 export function TokenTable({ tokens, showInterval }: { tokens: TokenRank[]; showInterval?: string }) {
+  if (!tokens?.length) {
+    return <p className="text-gray-500 text-center py-12">No tokens to display</p>;
+  }
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">

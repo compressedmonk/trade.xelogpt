@@ -6,16 +6,16 @@ export const revalidate = 30;
 
 export default async function TrendingPage() {
   const [data1h, data5m, data24h] = await Promise.all([
-    getTrending("sol", "1h", { limit: 50, order_by: "swaps" }),
-    getTrending("sol", "5m", { limit: 50, order_by: "swaps" }),
-    getTrending("sol", "24h", { limit: 50, order_by: "volume" }),
+    getTrending("sol", "1h", { limit: 50, order_by: "swaps" }).catch(() => ({ rank: [] })),
+    getTrending("sol", "5m", { limit: 50, order_by: "swaps" }).catch(() => ({ rank: [] })),
+    getTrending("sol", "24h", { limit: 50, order_by: "volume" }).catch(() => ({ rank: [] })),
   ]);
 
   return (
     <TrendingClient
-      data1h={data1h.rank}
-      data5m={data5m.rank}
-      data24h={data24h.rank}
+      data1h={data1h?.rank ?? []}
+      data5m={data5m?.rank ?? []}
+      data24h={data24h?.rank ?? []}
     />
   );
 }
