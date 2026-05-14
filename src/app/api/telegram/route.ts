@@ -65,10 +65,13 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const [info, security] = await Promise.all([
+        const [infoRaw, securityRaw] = await Promise.all([
           getTokenInfo("sol", address).catch(() => null),
           getTokenSecurity("sol", address).catch(() => null),
         ]);
+
+        const info = infoRaw as any;
+        const security = securityRaw as any;
 
         if (!info) {
           await sendMessage("Token not found", chatId);
@@ -114,7 +117,7 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const info: any = await getTokenInfo("sol", address);
+        const info = (await getTokenInfo("sol", address)) as any;
         if (!info) {
           await sendMessage("Token not found", chatId);
           return NextResponse.json({ ok: true });
