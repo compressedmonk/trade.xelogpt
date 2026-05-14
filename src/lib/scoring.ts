@@ -4,7 +4,13 @@ export type Signal = "pass" | "watch" | "skip";
 
 export function scoreToken(t: TokenRank): Signal {
   if (t.rug_ratio > 0.3 || t.is_wash_trading || t.is_honeypot === 1) return "skip";
-  if (t.smart_degen_count >= 3 && t.rug_ratio < 0.2 && !t.is_wash_trading) return "pass";
+
+  const hasSmartMoney = t.smart_degen_count >= 3;
+  const hasKolBacking = t.renowned_count >= 2;
+  const isSafe = t.rug_ratio < 0.2 && !t.is_wash_trading;
+
+  if (isSafe && (hasSmartMoney || hasKolBacking)) return "pass";
+  if (isSafe && (t.smart_degen_count >= 1 || t.renowned_count >= 1)) return "watch";
   return "watch";
 }
 

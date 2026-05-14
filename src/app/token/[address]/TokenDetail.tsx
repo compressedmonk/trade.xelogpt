@@ -46,6 +46,7 @@ export function TokenDetail({
   info: any;
   security: any;
   holders: any;
+  kolTraders: any;
   signals: any;
 }) {
   if (!info) {
@@ -57,6 +58,7 @@ export function TokenDetail({
   const mcap = priceNum * supply;
   const liq = parseFloat(info.liquidity ?? "0");
   const holderList = holders?.list ?? holders ?? [];
+  const kolList: any[] = kolTraders?.list ?? (Array.isArray(kolTraders) ? kolTraders : []);
   const signalList: any[] = Array.isArray(signals) ? signals : (signals?.list ?? []);
   const tokenSignals = signalList.filter((s: any) => s.token_address === address).slice(0, 10);
 
@@ -64,6 +66,10 @@ export function TokenDetail({
   const link = info.link ?? {};
   const stat = info.stat ?? {};
   const walletTags = info.wallet_tags_stat ?? {};
+
+  const kolsInProfit = kolList.filter((k: any) => (k.profit ?? 0) > 0).length;
+  const kolTotalInvested = kolList.reduce((sum: number, k: any) => sum + (k.total_cost ?? 0), 0);
+  const kolScore = kolList.length >= 5 ? "high" : kolList.length >= 2 ? "medium" : kolList.length > 0 ? "low" : "none";
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -81,12 +87,13 @@ export function TokenDetail({
       </div>
 
       {/* Info cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <InfoCard label="Liquidity" value={formatMarketCap(liq)} />
         <InfoCard label="Holders" value={String(info.holder_count ?? "—")} />
         <InfoCard label="Smart Money" value={String(walletTags.smart_wallets ?? "—")} accent="cyan" />
-        <InfoCard label="KOLs" value={String(walletTags.renowned_wallets ?? "—")} accent="purple" />
-        <InfoCard label="Snipers" value={String(walletTags.sniper_wallets ?? "—")} accent="red" />
+        <InfoCard label="KOLs Trading" value={String(kolList.length)} accent="purple" />
+        <InfoCard label="KOLs in Profit" value={`${kolsInProfit}/${kolList.length}`} accent={kolsInProfit > kolList.length / 2 ? "cyan" : "red"} />
+        <KolScoreCard score={kolScore} invested={kolTotalInvested} />
       </div>
 
       {/* K-line Chart */}
@@ -222,6 +229,130 @@ export function TokenDetail({
         </div>
       </div>
 
+      {/* Influencer Activity */}
+      {kolList.length > 0 && (
+        <div className="glass rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/[0.06] bg-gradient-to-r from-purple-500/10 to-cyan-500/5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-purple-400 uppercase tracking-wider">Influencer Activity</h2>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                  kolScore === "high" ? "bg-cyan-500/15 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+                    : kolScore === "medium" ? "bg-brand-yellow/15 text-brand-yellow"
+                    : "bg-white/[0.06] text-gray-400"
+                }`}>
+                  {kolScore === "high" ? "HIGH CONVICTION" : kolScore === "medium" ? "MODERATE" : "LOW"}
+                </span>
+                <span className="text-xs text-gray-500">${formatCompact(kolTotalInvested)} invested</span>
+              </div>
+            </div>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {kolList.slice(0, 10).map((k: any, i: number) => (
+                <div key={k.address ?? i} className="glass glass-hover rounded-lg p-3 flex items-center gap-3">
+                  {k.avatar ? (
+                    <img src={k.avatar} alt="" className="w-9 h-9 rounded-full ring-1 ring-white/[0.08]" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center text-xs text-gray-400">
+                      {k.wallet_tag_v2 ?? (i + 1)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      {k.twitter_username ? (
+                        <a
+                          href={`https://x.com/${k.twitter_username}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-cyan-400 hover:text-cyan-300 hover:underline transition-colors"
+                        >
+                          @{k.twitter_username}
+                        </a>
+                      ) : (
+                        <span className="text-sm font-mono text-gray-400">{k.address?.slice(0, 6)}...{k.address?.slice(-4)}</span>
+                      )}
+                      {k.twitter_name && k.twitter_name !== k.twitter_username && (
+                        <span className="text-xs text-gray-500 truncate">{k.twitter_name}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {(k.tags ?? []).map((tag: string) => (
+                        <span key={tag} className={`text-[9px] px-1 py-0.5 rounded ${
+                          tag === "kol" ? "bg-purple-500/10 text-purple-400"
+                            : tag === "smart_degen" ? "bg-cyan-500/10 text-cyan-400"
+                            : "bg-white/[0.06] text-gray-500"
+                        }`}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`text-sm font-mono font-medium ${(k.profit ?? 0) >= 0 ? "text-brand-green" : "text-brand-red"}`}>
+                      {(k.profit ?? 0) >= 0 ? "+" : ""}${formatCompact(k.profit ?? 0)}
+                    </p>
+                    <p className="text-[10px] text-gray-500">${formatCompact(k.total_cost ?? 0)} in</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dev Wallet Intelligence */}
+      {dev.creator_address && (
+        <div className="glass rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/[0.06] bg-gradient-to-r from-orange-500/5 to-transparent">
+            <h2 className="text-sm font-bold text-orange-400 uppercase tracking-wider">Dev Intelligence</h2>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Creator Wallet</p>
+                <a
+                  href={`https://solscan.io/account/${dev.creator_address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-mono text-cyan-400 hover:underline"
+                >
+                  {dev.creator_address?.slice(0, 8)}...{dev.creator_address?.slice(-6)}
+                </a>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Tokens Created</p>
+                <span className={`text-sm font-bold ${(dev.creator_open_count ?? 0) > 5 ? "text-brand-yellow" : "text-gray-300"}`}>
+                  {dev.creator_open_count ?? "?"}
+                </span>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Token Status</p>
+                <span className={`text-sm font-medium ${dev.creator_token_status === "creator_close" ? "text-brand-green" : "text-brand-red"}`}>
+                  {dev.creator_token_status === "creator_close" ? "Sold / Renounced" : dev.creator_token_status === "creator_hold" ? "Still Holding" : dev.creator_token_status ?? "?"}
+                </span>
+              </div>
+            </div>
+            {dev.ath_token_info && (
+              <div className="mt-3 pt-3 border-t border-white/[0.04]">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Dev&apos;s Best Token (ATH)</p>
+                <div className="flex items-center gap-2">
+                  {dev.ath_token_info.avatar && (
+                    <img src={dev.ath_token_info.avatar} alt="" className="w-5 h-5 rounded-full" />
+                  )}
+                  <span className="text-sm text-white font-medium">{dev.ath_token_info.symbol}</span>
+                  <span className="text-xs text-gray-500">ATH MCap: {formatMarketCap(parseFloat(dev.ath_token_info.ath_mc ?? "0"))}</span>
+                </div>
+              </div>
+            )}
+            {dev.fund_from && (
+              <div className="mt-3 pt-3 border-t border-white/[0.04]">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Funding Source</p>
+                <span className="text-xs font-mono text-gray-400">{dev.fund_from}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Signal Feed */}
       {tokenSignals.length > 0 && (
         <div className="glass rounded-xl overflow-hidden">
@@ -319,4 +450,25 @@ function truncateUrl(url: string): string {
   } catch {
     return url.slice(0, 30);
   }
+}
+
+function formatCompact(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  if (abs >= 1) return n.toFixed(0);
+  return n.toFixed(2);
+}
+
+function KolScoreCard({ score, invested }: { score: string; invested: number }) {
+  const label = score === "high" ? "HIGH" : score === "medium" ? "MED" : score === "low" ? "LOW" : "—";
+  const color = score === "high" ? "text-cyan-400" : score === "medium" ? "text-brand-yellow" : score === "low" ? "text-gray-400" : "text-gray-600";
+  const glow = score === "high" ? "shadow-[0_0_15px_rgba(6,182,212,0.15)]" : "";
+  return (
+    <div className={`glass glass-hover rounded-xl p-4 ${glow}`}>
+      <p className="text-xs text-gray-500 uppercase tracking-wider">KOL Conviction</p>
+      <p className={`text-lg font-bold mt-1 ${color}`}>{label}</p>
+      {invested > 0 && <p className="text-[10px] text-gray-500 mt-0.5">${formatCompact(invested)} total</p>}
+    </div>
+  );
 }
