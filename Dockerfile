@@ -27,8 +27,8 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
-USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-CMD ["sh", "-c", "npx prisma db push --skip-generate 2>/dev/null; node server.js"]
+USER root
+CMD ["sh", "-c", "mkdir -p /app/data && chown nextjs:nodejs /app/data && su nextjs -s /bin/sh -c 'npx prisma db push --skip-generate && node server.js'"]

@@ -10,9 +10,9 @@ services:
       - TWITTER_BEARER_TOKEN=${TWITTER_BEARER_TOKEN:-}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
-      - DATABASE_URL=file:./dev.db
+      - DATABASE_URL=file:/app/data/dev.db
     volumes:
-      - dbdata:/app/prisma
+      - dbdata:/app/data
     restart: unless-stopped
 
 volumes:
