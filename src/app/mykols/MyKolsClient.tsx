@@ -46,6 +46,11 @@ export function MyKolsClient() {
 
   const fetchProfiles = useCallback(async () => {
     const res = await fetch("/api/kols");
+    if (!res.ok) {
+      setStatus("Hiba: KOL lista nem tölthető be (szerver hiba).");
+      setProfiles([]);
+      return;
+    }
     const data = await res.json();
     setProfiles(Array.isArray(data) ? data : []);
   }, []);
@@ -74,21 +79,31 @@ export function MyKolsClient() {
   }, [fetchAll, fetchFeed]);
 
   async function addKol() {
-    if (!newHandle.trim()) return;
+    const handle = newHandle.trim().replace(/^@+/, "");
+    if (!handle) return;
     setStatus("Hozzáadás...");
-    await fetch("/api/kols", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        twitterUsername: newHandle.trim(),
-        wallets: newWallet.trim() ? [newWallet.trim()] : [],
-        autoResolve: !newWallet.trim(),
-      }),
-    });
-    setNewHandle("");
-    setNewWallet("");
-    setStatus("");
-    fetchAll();
+    try {
+      const res = await fetch("/api/kols", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          twitterUsername: handle,
+          wallets: newWallet.trim() ? [newWallet.trim()] : [],
+          autoResolve: !newWallet.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus(`Hiba: ${data.error ?? res.status}`);
+        return;
+      }
+      setNewHandle("");
+      setNewWallet("");
+      setStatus(`@${data.twitterUsername} hozzáadva${data.wallets?.length ? ` (${data.wallets.length} wallet)` : " — csak említések, wallet nélkül"}`);
+      fetchAll();
+    } catch {
+      setStatus("Hiba: nem sikerült menteni. Próbáld újra.");
+    }
   }
 
   async function resolveWallet(profile: KolProfile) {
@@ -153,6 +168,7 @@ export function MyKolsClient() {
         <h1 className="text-2xl font-bold text-gradient mb-1">Saját KOL-ok</h1>
         <p className="text-sm text-gray-500">
           Csak a te általad kiválasztott X fiókok említései és wallet vásárlásai.
+          Az @ jel opcionális — <span className="text-gray-400">ansem</span> és <span className="text-gray-400">@ansem</span> egyaránt működik.
         </p>
       </div>
 
