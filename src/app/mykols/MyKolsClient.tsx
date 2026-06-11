@@ -96,6 +96,8 @@ export function MyKolsClient() {
   const [walletSeed, setWalletSeed] = useState<WalletSeedKol[]>([]);
   const [walletSeedLoading, setWalletSeedLoading] = useState(false);
   const [importingWallets, setImportingWallets] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importTab, setImportTab] = useState<"wallets" | "discover">("wallets");
   const [newHandle, setNewHandle] = useState("");
   const [newWallet, setNewWallet] = useState("");
   const [status, setStatus] = useState("");
@@ -162,24 +164,29 @@ export function MyKolsClient() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([
-      fetchProfiles(),
-      fetchFeed(),
-      fetchKolTokens(),
-      fetchDiscover(),
-      fetchWalletSeed(),
-    ]);
+    const tasks: Promise<void>[] = [fetchProfiles(), fetchFeed(), fetchKolTokens()];
+    if (importOpen) {
+      tasks.push(fetchDiscover(), fetchWalletSeed());
+    }
+    await Promise.all(tasks);
     setLoading(false);
-  }, [fetchProfiles, fetchFeed, fetchKolTokens, fetchDiscover, fetchWalletSeed]);
+  }, [fetchProfiles, fetchFeed, fetchKolTokens, fetchDiscover, fetchWalletSeed, importOpen]);
 
   useEffect(() => {
-    fetchAll();
+    setLoading(true);
+    Promise.all([fetchProfiles(), fetchFeed(), fetchKolTokens()]).finally(() => setLoading(false));
     const interval = setInterval(() => {
       fetchFeed();
       fetchKolTokens();
     }, 60000);
     return () => clearInterval(interval);
-  }, [fetchAll, fetchFeed, fetchKolTokens]);
+  }, [fetchProfiles, fetchFeed, fetchKolTokens]);
+
+  useEffect(() => {
+    if (!importOpen) return;
+    fetchWalletSeed();
+    fetchDiscover();
+  }, [importOpen, fetchWalletSeed, fetchDiscover]);
 
   const customKolCounts = Object.fromEntries(
     kolTokens.map((r) => [r.token.address.toLowerCase(), r.myKolCount]),
@@ -356,15 +363,60 @@ export function MyKolsClient() {
         {status && <p className="text-xs text-gray-400">{status}</p>}
       </div>
 
-      {/* Wallet seed KOLs */}
+      {/* KOL import panel (collapsed by default) */}
       <div className="glass rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setImportOpen((o) => !o)}
+          className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-white/[0.02] transition-colors"
+        >
           <div>
             <h2 className="text-sm font-bold text-purple-400 uppercase tracking-wider">
-              Ismert Solana KOL tárcák ({walletSeed.length})
+              KOL importálás
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Nick + X handle + Solana wallet. Importálás → Saját KOL-ok (wallet trade követéshez).
+              Tárca lista (122) vagy GMGN felfedezés — csak importáláskor kell.
+            </p>
+          </div>
+          <span className="text-gray-500 text-xs shrink-0">{importOpen ? "▲ Bezár" : "▼ Megnyit"}</span>
+        </button>
+
+        {importOpen && (
+          <>
+            <div className="px-4 py-2 border-t border-white/[0.06] flex gap-1">
+              <button
+                type="button"
+                onClick={() => setImportTab("wallets")}
+                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                  importTab === "wallets"
+                    ? "bg-cyan-500/15 text-cyan-300"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                Tárca lista
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportTab("discover")}
+                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                  importTab === "discover"
+                    ? "bg-purple-500/15 text-purple-300"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                Felfedezés
+              </button>
+            </div>
+
+            {importTab === "wallets" && (
+      <div>
+        <div className="px-4 py-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+              Ismert Solana KOL tárcák ({walletSeed.length})
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Nick + X handle + Solana wallet.
             </p>
           </div>
           <div className="flex gap-2">
@@ -435,16 +487,17 @@ export function MyKolsClient() {
           </table>
         </div>
       </div>
+            )}
 
-      {/* Discovery */}
-      <div className="glass rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+            {importTab === "discover" && (
+      <div>
+        <div className="px-4 py-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-purple-400 uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-purple-400 uppercase tracking-wider">
               Solana KOL felfedezés
-            </h2>
+            </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              GMGN feed + ismert seed lista. Követőszám X API-ból (vagy becsült). Mazsolázd ki a saját listádhoz.
+              GMGN feed + seed. Követőszám szerint rendezve.
             </p>
           </div>
           <button
@@ -594,6 +647,10 @@ export function MyKolsClient() {
             </tbody>
           </table>
         </div>
+      </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* KOL list */}
