@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const links = [
   { href: "/trending", label: "Trending" },
@@ -13,6 +13,13 @@ const links = [
 
 export function Nav() {
   const path = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/");
+    router.refresh();
+  }
 
   return (
     <nav className="sticky top-0 z-50 flex items-center gap-1 px-5 py-3 glass-strong border-t-0 border-x-0 rounded-none">
@@ -32,6 +39,12 @@ export function Nav() {
           {l.label}
         </Link>
       ))}
+      <button
+        onClick={handleLogout}
+        className="ml-auto px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-brand-red hover:bg-white/[0.04] transition-all duration-200"
+      >
+        Kijelentkezés
+      </button>
     </nav>
   );
 }
