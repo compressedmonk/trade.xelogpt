@@ -1,0 +1,388 @@
+.root {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #020408;
+  color: #f1f5f9;
+  font-family: inherit;
+}
+
+.orbWrap {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.orbWrap1 { top: -15%; left: -10%; }
+.orbWrap2 { bottom: -10%; right: -5%; }
+.orbWrap3 { top: 40%; left: 35%; }
+
+.orb {
+  border-radius: 50%;
+  filter: blur(80px);
+}
+.orb1 {
+  width: min(55vw, 600px);
+  height: min(55vw, 600px);
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, transparent 70%);
+  animation: orbDrift1 18s ease-in-out infinite;
+}
+.orb2 {
+  width: min(45vw, 500px);
+  height: min(45vw, 500px);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
+  animation: orbDrift2 22s ease-in-out infinite;
+}
+.orb3 {
+  width: min(35vw, 400px);
+  height: min(35vw, 400px);
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.18) 0%, transparent 70%);
+  animation: orbDrift3 15s ease-in-out infinite;
+}
+
+@keyframes orbDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.08); }
+}
+@keyframes orbDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-50px, -20px) scale(1.05); }
+}
+@keyframes orbDrift3 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+  50% { transform: translate(20px, -40px) scale(1.12); opacity: 1; }
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(6, 182, 212, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 75%);
+  animation: gridPulse 8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+.noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 3;
+}
+
+.phrase {
+  position: absolute;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
+  animation: phraseFloat ease-in-out infinite;
+  user-select: none;
+}
+.phraseXs { font-size: 9px; }
+.phraseSm { font-size: 10px; }
+.phraseMd { font-size: 11px; }
+.phraseLg { font-size: 13px; }
+.phraseCyan { color: rgba(6, 182, 212, 0.55); text-shadow: 0 0 30px rgba(6, 182, 212, 0.4); }
+.phrasePurple { color: rgba(167, 139, 250, 0.5); text-shadow: 0 0 30px rgba(139, 92, 246, 0.35); }
+.phraseGreen { color: rgba(52, 211, 153, 0.45); text-shadow: 0 0 30px rgba(52, 211, 153, 0.3); }
+.phraseBlue { color: rgba(96, 165, 250, 0.5); text-shadow: 0 0 30px rgba(59, 130, 246, 0.35); }
+
+@keyframes phraseFloat {
+  0% { opacity: 0; transform: translateY(24px) translateX(-8px) scale(0.92); filter: blur(4px); }
+  12% { opacity: 0.85; filter: blur(0); }
+  50% { opacity: 1; transform: translateY(-12px) translateX(6px) scale(1); }
+  88% { opacity: 0.85; filter: blur(0); }
+  100% { opacity: 0; transform: translateY(-36px) translateX(12px) scale(0.94); filter: blur(6px); }
+}
+
+.tickerWrap {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  z-index: 5;
+  mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+}
+.ticker {
+  display: flex;
+  gap: 2.5rem;
+  width: max-content;
+  animation: ticker 40s linear infinite;
+  padding: 10px 0;
+}
+.tickerItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.5);
+  white-space: nowrap;
+}
+.tickerDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #06b6d4;
+  box-shadow: 0 0 8px #06b6d4;
+  animation: dotPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 4rem 1rem;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 1s ease, transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.heroIn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(6, 182, 212, 0.9);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.06);
+  backdrop-filter: blur(8px);
+}
+.badgePulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 12px #34d399;
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.title {
+  font-size: clamp(3rem, 10vw, 5.5rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin: 0 0 1rem;
+}
+.titleLine {
+  display: block;
+  color: #f1f5f9;
+  text-shadow: 0 0 60px rgba(255, 255, 255, 0.15);
+}
+.titleAccent {
+  display: block;
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 35%, #a78bfa 65%, #06b6d4 100%);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 6s ease-in-out infinite;
+  filter: drop-shadow(0 0 40px rgba(6, 182, 212, 0.35));
+}
+@keyframes shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.subtitle {
+  font-size: clamp(0.85rem, 2.5vw, 1.05rem);
+  color: rgba(148, 163, 184, 0.75);
+  max-width: 28rem;
+  margin: 0 auto 1.5rem;
+  line-height: 1.6;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.tag {
+  padding: 0.3rem 0.75rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.loginWrap {
+  position: relative;
+  width: 100%;
+  max-width: 24rem;
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+  transition: opacity 1s ease 0.3s, transform 1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
+}
+.loginWrapIn {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.loginGlow {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(ellipse at center, rgba(6, 182, 212, 0.15) 0%, transparent 65%);
+  animation: glowPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.footer {
+  margin-top: 2rem;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  color: rgba(75, 85, 99, 0.9);
+}
+
+/* Login form — global selectors for LoginForm children */
+.loginWrap :global(.landing-form) {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  padding: 1.75rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(6, 182, 212, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 60px -15px rgba(6, 182, 212, 0.15);
+}
+.loginWrap :global(.landing-input) {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.loginWrap :global(.landing-input:focus) {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 20px -5px rgba(6, 182, 212, 0.3);
+}
+.loginWrap :global(.landing-submit) {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  background: linear-gradient(to right, #0891b2, #2563eb);
+  transition: opacity 0.2s, box-shadow 0.2s;
+}
+.loginWrap :global(.landing-submit:hover:not(:disabled)) {
+  box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.4);
+}
+.loginWrap :global(.landing-submit:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.loginWrap :global(.landing-submit)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.15) 50%, transparent 60%);
+  transform: translateX(-100%);
+  animation: btnShine 4s ease-in-out infinite;
+}
+@keyframes btnShine {
+  0%, 80%, 100% { transform: translateX(-100%); }
+  40% { transform: translateX(100%); }
+}
+
+@media (max-width: 640px) {
+  .phraseLg,
+  .phraseMd {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phrase, .orb1, .orb2, .orb3, .ticker, .titleAccent, .loginGlow, .grid {
+    animation: none !important;
+  }
+  .hero, .loginWrap {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .loginWrap :global(.landing-submit)::before {
+    animation: none !important;
+  }
+}
