@@ -31,4 +31,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 USER root
-CMD ["sh", "-c", "mkdir -p /app/data && chown nextjs:nodejs /app/data && su nextjs -s /bin/sh -c 'npx prisma db push --skip-generate && node server.js'"]
+CMD ["sh", "-c", "mkdir -p /app/data && chown nextjs:nodejs /app/data && npx prisma db push --skip-generate && exec su nextjs -s /bin/sh -c 'node server.js'"]
