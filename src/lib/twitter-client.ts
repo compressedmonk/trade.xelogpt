@@ -60,7 +60,7 @@ export async function lookupUserByUsername(username: string): Promise<XUser | nu
 export async function lookupUsersByUsernames(usernames: string[]): Promise<XUserMetrics[]> {
   if (!hasBearerToken() || usernames.length === 0) return [];
 
-  const unique = [...new Set(usernames.map((u) => u.replace(/^@/, "").trim()).filter(Boolean))];
+  const unique = Array.from(new Set(usernames.map((u) => u.replace(/^@/, "").trim()).filter(Boolean)));
   const results: XUserMetrics[] = [];
 
   for (let i = 0; i < unique.length; i += 100) {
