@@ -42,6 +42,7 @@ export function TokenDetail({
   holders,
   kolTraders,
   signals,
+  ownKols = [],
 }: {
   address: string;
   info: any;
@@ -49,6 +50,13 @@ export function TokenDetail({
   holders: any;
   kolTraders: any;
   signals: any;
+  ownKols?: Array<{
+    twitterUsername: string;
+    displayName: string | null;
+    walletAddress?: string;
+    type: "mention" | "trade";
+    detail?: string;
+  }>;
 }) {
   if (!info) {
     return <p className="text-center text-gray-500 py-12">Token not found or API error</p>;
@@ -229,6 +237,38 @@ export function TokenDetail({
           </div>
         </div>
       </div>
+
+      {/* Own KOLs on this token */}
+      {ownKols.length > 0 && (
+        <div className="glass rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/[0.06] bg-gradient-to-r from-purple-500/15 to-transparent">
+            <h2 className="text-sm font-bold text-purple-400 uppercase tracking-wider">Saját KOL-ok ezen a tokenen</h2>
+          </div>
+          <div className="p-4 space-y-2">
+            {ownKols.map((k, i) => (
+              <div key={`${k.twitterUsername}-${i}`} className="flex items-center justify-between gap-3 glass rounded-lg p-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <a
+                    href={`https://x.com/${k.twitterUsername}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-cyan-400 hover:underline shrink-0"
+                  >
+                    @{k.twitterUsername}
+                  </a>
+                  {k.displayName && <span className="text-xs text-gray-500 truncate">{k.displayName}</span>}
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded shrink-0 ${
+                    k.type === "mention" ? "bg-purple-500/10 text-purple-400" : "bg-cyan-500/10 text-cyan-400"
+                  }`}>
+                    {k.type === "mention" ? "említés" : "trade"}
+                  </span>
+                </div>
+                <span className="text-xs text-gray-400 truncate max-w-[200px]">{k.detail ?? "—"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Influencer Activity */}
       {kolList.length > 0 && (

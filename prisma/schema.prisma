@@ -59,3 +59,37 @@ model TradeLog {
   triggeredBy   String?
   createdAt     DateTime @default(now())
 }
+
+model KolProfile {
+  id              Int               @id @default(autoincrement())
+  twitterUsername String            @unique
+  displayName     String?
+  twitterUserId   String?
+  enabled         Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  wallets         KolWallet[]
+  mentions        KolMentionCache[]
+}
+
+model KolWallet {
+  id            Int        @id @default(autoincrement())
+  kolProfileId  Int
+  walletAddress String
+  chain         String     @default("sol")
+  label         String?
+  kolProfile    KolProfile @relation(fields: [kolProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([kolProfileId, walletAddress, chain])
+}
+
+model KolMentionCache {
+  id             Int        @id @default(autoincrement())
+  tweetId        String     @unique
+  kolProfileId   Int
+  text           String
+  tokenSymbols   String?
+  tokenAddresses String?
+  tweetedAt      DateTime
+  fetchedAt      DateTime   @default(now())
+  kolProfile     KolProfile @relation(fields: [kolProfileId], references: [id], onDelete: Cascade)
+}

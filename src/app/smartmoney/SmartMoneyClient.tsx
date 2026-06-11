@@ -40,7 +40,13 @@ export function SmartMoneyClient({ smartMoney, kols }: { smartMoney: unknown; ko
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gradient">Smart Money Feed — Solana</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gradient">Smart Money Feed — Solana</h1>
+          <p className="text-xs text-gray-500 mt-1">
+            Globális GMGN feed. A saját KOL listád:{" "}
+            <a href="/mykols" className="text-purple-400 hover:underline">Saját KOL-ok</a>
+          </p>
+        </div>
         <div className="flex glass rounded-lg overflow-hidden">
           <button
             onClick={() => setTab("smart")}
