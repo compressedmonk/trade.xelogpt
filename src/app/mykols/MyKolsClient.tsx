@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { formatPrice, timeAgo } from "@/lib/scoring";
+import type { TokenRank } from "@/lib/gmgn-client";
+import { TokenTable } from "@/components/TokenTable";
+import { formatPrice, formatFollowers, timeAgo } from "@/lib/scoring";
+import type { KolCategory } from "@/lib/solana-kol-seed";
+import type { KolSource } from "@/lib/kol-discovery";
 
 interface KolWallet {
   id: number;
@@ -17,6 +21,13 @@ interface KolProfile {
   displayName: string | null;
   enabled: boolean;
   wallets: KolWallet[];
+}
+
+interface KolTokenRow {
+  token: TokenRank;
+  myKolCount: number;
+  myKols: string[];
+  lastMentionAt: number;
 }
 
 interface FeedItem {
@@ -35,11 +46,56 @@ interface FeedItem {
   clusterCount?: number;
 }
 
+interface DiscoveredKol {
+  twitterUsername: string;
+  displayName: string | null;
+  category: KolCategory | null;
+  followerCount: number | null;
+  followerSource: "live" | "approx" | null;
+  notes: string | null;
+  sources: KolSource[];
+  walletAddress: string | null;
+  alreadyAdded: boolean;
+}
+
+const CATEGORY_LABELS: Record<KolCategory, string> = {
+  builder: "Builder",
+  trader: "Trader",
+  news: "News",
+  memecoin: "Memecoin",
+  community: "Community",
+};
+
+const SOURCE_LABELS: Record<KolSource, string> = {
+  seed: "Seed",
+  wallet_seed: "Tárca",
+  gmgn_kol: "GMGN KOL",
+  gmgn_smartmoney: "GMGN SM",
+};
+
+interface WalletSeedKol {
+  walletAddress: string;
+  displayName: string;
+  twitterUsername: string;
+  alreadyAdded: boolean;
+}
+
 export function MyKolsClient() {
   const [profiles, setProfiles] = useState<KolProfile[]>([]);
   const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [kolTokens, setKolTokens] = useState<KolTokenRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(false);
+  const [tokensLoading, setTokensLoading] = useState(false);
+  const [discovered, setDiscovered] = useState<DiscoveredKol[]>([]);
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+  const [discoverCategory, setDiscoverCategory] = useState<KolCategory | "">("");
+  const [discoverMinFollowers, setDiscoverMinFollowers] = useState("");
+  const [discoverGmgnOnly, setDiscoverGmgnOnly] = useState(false);
+  const [discoverWalletOnly, setDiscoverWalletOnly] = useState(false);
+  const [walletSeed, setWalletSeed] = useState<WalletSeedKol[]>([]);
+  const [walletSeedLoading, setWalletSeedLoading] = useState(false);
+  const [importingWallets, setImportingWallets] = useState(false);
   const [newHandle, setNewHandle] = useState("");
   const [newWallet, setNewWallet] = useState("");
   const [status, setStatus] = useState("");
@@ -66,44 +122,146 @@ export function MyKolsClient() {
     }
   }, []);
 
+  const fetchKolTokens = useCallback(async () => {
+    setTokensLoading(true);
+    try {
+      const res = await fetch("/api/kols/tokens");
+      const data = await res.json();
+      setKolTokens(Array.isArray(data) ? data : []);
+    } finally {
+      setTokensLoading(false);
+    }
+  }, []);
+
+  const fetchDiscover = useCallback(async () => {
+    setDiscoverLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (discoverCategory) params.set("category", discoverCategory);
+      if (discoverMinFollowers) params.set("minFollowers", discoverMinFollowers);
+      if (discoverGmgnOnly) params.set("gmgnOnly", "true");
+      if (discoverWalletOnly) params.set("walletSeedOnly", "true");
+      const res = await fetch(`/api/kols/discover?${params.toString()}`);
+      const data = await res.json();
+      setDiscovered(Array.isArray(data.kols) ? data.kols : []);
+    } finally {
+      setDiscoverLoading(false);
+    }
+  }, [discoverCategory, discoverMinFollowers, discoverGmgnOnly, discoverWalletOnly]);
+
+  const fetchWalletSeed = useCallback(async () => {
+    setWalletSeedLoading(true);
+    try {
+      const res = await fetch("/api/kols/wallet-seed");
+      const data = await res.json();
+      setWalletSeed(Array.isArray(data.kols) ? data.kols : []);
+    } finally {
+      setWalletSeedLoading(false);
+    }
+  }, []);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchProfiles(), fetchFeed()]);
+    await Promise.all([
+      fetchProfiles(),
+      fetchFeed(),
+      fetchKolTokens(),
+      fetchDiscover(),
+      fetchWalletSeed(),
+    ]);
     setLoading(false);
-  }, [fetchProfiles, fetchFeed]);
+  }, [fetchProfiles, fetchFeed, fetchKolTokens, fetchDiscover, fetchWalletSeed]);
 
   useEffect(() => {
     fetchAll();
-    const interval = setInterval(fetchFeed, 60000);
+    const interval = setInterval(() => {
+      fetchFeed();
+      fetchKolTokens();
+    }, 60000);
     return () => clearInterval(interval);
-  }, [fetchAll, fetchFeed]);
+  }, [fetchAll, fetchFeed, fetchKolTokens]);
 
-  async function addKol() {
-    const handle = newHandle.trim().replace(/^@+/, "");
-    if (!handle) return;
+  const customKolCounts = Object.fromEntries(
+    kolTokens.map((r) => [r.token.address.toLowerCase(), r.myKolCount]),
+  );
+  const tableTokens: TokenRank[] = kolTokens.map((r) => ({
+    ...r.token,
+    renowned_count: Math.max(r.token.renowned_count ?? 0, r.myKolCount),
+  }));
+
+  async function addKolByHandle(handle: string, wallet?: string) {
+    const normalized = handle.trim().replace(/^@+/, "");
+    if (!normalized) return false;
     setStatus("Hozzáadás...");
     try {
       const res = await fetch("/api/kols", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          twitterUsername: handle,
-          wallets: newWallet.trim() ? [newWallet.trim()] : [],
-          autoResolve: !newWallet.trim(),
+          twitterUsername: normalized,
+          wallets: wallet?.trim() ? [wallet.trim()] : [],
+          autoResolve: !wallet?.trim(),
         }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus(`Hiba: ${data.error ?? res.status}`);
+        return false;
+      }
+      setStatus(`@${data.twitterUsername} hozzáadva${data.wallets?.length ? ` (${data.wallets.length} wallet)` : " — csak említések, wallet nélkül"}`);
+      await fetchAll();
+      return true;
+    } catch {
+      setStatus("Hiba: nem sikerült menteni. Próbáld újra.");
+      return false;
+    }
+  }
+
+  async function addKol() {
+    const ok = await addKolByHandle(newHandle, newWallet);
+    if (ok) {
+      setNewHandle("");
+      setNewWallet("");
+    }
+  }
+
+  async function importAllWalletKols() {
+    setImportingWallets(true);
+    setStatus("Tárca KOL-ok importálása...");
+    try {
+      const res = await fetch("/api/kols/import-wallets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
       });
       const data = await res.json();
       if (!res.ok) {
         setStatus(`Hiba: ${data.error ?? res.status}`);
         return;
       }
-      setNewHandle("");
-      setNewWallet("");
-      setStatus(`@${data.twitterUsername} hozzáadva${data.wallets?.length ? ` (${data.wallets.length} wallet)` : " — csak említések, wallet nélkül"}`);
-      fetchAll();
+      setStatus(`${data.imported} KOL importálva (wallet + X handle).`);
+      await fetchAll();
     } catch {
-      setStatus("Hiba: nem sikerült menteni. Próbáld újra.");
+      setStatus("Hiba: import sikertelen.");
+    } finally {
+      setImportingWallets(false);
     }
+  }
+
+  async function importOneWalletKol(kol: WalletSeedKol) {
+    setStatus(`@${kol.twitterUsername} importálása...`);
+    const res = await fetch("/api/kols/import-wallets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ twitterUsernames: [kol.twitterUsername] }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setStatus(`Hiba: ${data.error ?? res.status}`);
+      return;
+    }
+    setStatus(`@${kol.twitterUsername} importálva.`);
+    await fetchAll();
   }
 
   async function resolveWallet(profile: KolProfile) {
@@ -198,6 +356,246 @@ export function MyKolsClient() {
         {status && <p className="text-xs text-gray-400">{status}</p>}
       </div>
 
+      {/* Wallet seed KOLs */}
+      <div className="glass rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-purple-400 uppercase tracking-wider">
+              Ismert Solana KOL tárcák ({walletSeed.length})
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Nick + X handle + Solana wallet. Importálás → Saját KOL-ok (wallet trade követéshez).
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={fetchWalletSeed}
+              disabled={walletSeedLoading}
+              className="text-xs text-gray-400 hover:text-cyan-400 disabled:opacity-50"
+            >
+              {walletSeedLoading ? "..." : "Frissítés"}
+            </button>
+            <button
+              onClick={importAllWalletKols}
+              disabled={importingWallets}
+              className="px-3 py-1.5 text-xs bg-cyan-500/15 text-cyan-300 rounded-lg hover:bg-cyan-500/25 disabled:opacity-50"
+            >
+              {importingWallets ? "Import..." : "Összes importálása"}
+            </button>
+          </div>
+        </div>
+        <div className="overflow-x-auto max-h-[360px] overflow-y-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-[#0d0d12] z-10">
+              <tr className="text-gray-500 text-xs uppercase">
+                <th className="text-left px-4 py-2">Nick</th>
+                <th className="text-left px-4 py-2">X</th>
+                <th className="text-left px-4 py-2">Wallet</th>
+                <th className="text-right px-4 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {walletSeedLoading && walletSeed.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500">Betöltés...</td>
+                </tr>
+              ) : (
+                walletSeed.map((kol) => (
+                  <tr key={kol.walletAddress} className="border-t border-white/[0.04] hover:bg-white/[0.02]">
+                    <td className="px-4 py-2 text-gray-300">{kol.displayName}</td>
+                    <td className="px-4 py-2">
+                      <a
+                        href={`https://x.com/${kol.twitterUsername}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-400 hover:underline text-xs"
+                      >
+                        @{kol.twitterUsername}
+                      </a>
+                    </td>
+                    <td className="px-4 py-2 font-mono text-[10px] text-gray-500">
+                      {kol.walletAddress.slice(0, 6)}...{kol.walletAddress.slice(-4)}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      {kol.alreadyAdded ? (
+                        <span className="text-[10px] text-gray-500">Listában</span>
+                      ) : (
+                        <button
+                          onClick={() => importOneWalletKol(kol)}
+                          className="text-xs text-purple-400 hover:text-purple-300"
+                        >
+                          Import
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Discovery */}
+      <div className="glass rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-purple-400 uppercase tracking-wider">
+              Solana KOL felfedezés
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              GMGN feed + ismert seed lista. Követőszám X API-ból (vagy becsült). Mazsolázd ki a saját listádhoz.
+            </p>
+          </div>
+          <button
+            onClick={fetchDiscover}
+            disabled={discoverLoading}
+            className="text-xs text-gray-400 hover:text-cyan-400 disabled:opacity-50"
+          >
+            {discoverLoading ? "Betöltés..." : "Frissítés"}
+          </button>
+        </div>
+        <div className="px-4 py-3 border-b border-white/[0.06] flex flex-wrap gap-2">
+          <select
+            value={discoverCategory}
+            onChange={(e) => setDiscoverCategory(e.target.value as KolCategory | "")}
+            className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-gray-300"
+          >
+            <option value="">Minden kategória</option>
+            {(Object.keys(CATEGORY_LABELS) as KolCategory[]).map((c) => (
+              <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+            ))}
+          </select>
+          <input
+            value={discoverMinFollowers}
+            onChange={(e) => setDiscoverMinFollowers(e.target.value)}
+            placeholder="Min. követő"
+            className="w-28 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-gray-300 placeholder:text-gray-600"
+          />
+          <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={discoverGmgnOnly}
+              onChange={(e) => setDiscoverGmgnOnly(e.target.checked)}
+              className="rounded"
+            />
+            Csak GMGN
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={discoverWalletOnly}
+              onChange={(e) => setDiscoverWalletOnly(e.target.checked)}
+              className="rounded"
+            />
+            Csak tárca lista
+          </label>
+          <button
+            onClick={fetchDiscover}
+            disabled={discoverLoading}
+            className="px-3 py-1.5 text-xs bg-purple-500/15 text-purple-300 rounded-lg hover:bg-purple-500/25 disabled:opacity-50"
+          >
+            Szűrés
+          </button>
+        </div>
+        <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-[#0d0d12] z-10">
+              <tr className="text-gray-500 text-xs uppercase">
+                <th className="text-left px-4 py-2">KOL</th>
+                <th className="text-left px-4 py-2">Kategória</th>
+                <th className="text-left px-4 py-2">Wallet</th>
+                <th className="text-right px-4 py-2">Követők</th>
+                <th className="text-left px-4 py-2">Forrás</th>
+                <th className="text-right px-4 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {discoverLoading && discovered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">Betöltés...</td>
+                </tr>
+              ) : discovered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">Nincs találat a szűrőkre.</td>
+                </tr>
+              ) : (
+                discovered.map((kol) => (
+                  <tr key={kol.twitterUsername} className="border-t border-white/[0.04] hover:bg-white/[0.02]">
+                    <td className="px-4 py-2">
+                      <a
+                        href={`https://x.com/${kol.twitterUsername}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-400 hover:underline"
+                      >
+                        @{kol.twitterUsername}
+                      </a>
+                      {kol.displayName && (
+                        <span className="block text-[10px] text-gray-500">{kol.displayName}</span>
+                      )}
+                      {kol.notes && (
+                        <span className="block text-[10px] text-gray-600 truncate max-w-[180px]">{kol.notes}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      {kol.category ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-gray-400">
+                          {CATEGORY_LABELS[kol.category]}
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 font-mono text-[10px] text-gray-500">
+                      {kol.walletAddress
+                        ? `${kol.walletAddress.slice(0, 6)}...${kol.walletAddress.slice(-4)}`
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-right font-mono text-xs text-gray-300">
+                      {kol.followerCount != null ? (
+                        <>
+                          {formatFollowers(kol.followerCount)}
+                          {kol.followerSource === "approx" && (
+                            <span className="text-gray-600 ml-1">~</span>
+                          )}
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {kol.sources.map((s) => (
+                          <span
+                            key={s}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400"
+                          >
+                            {SOURCE_LABELS[s]}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      {kol.alreadyAdded ? (
+                        <span className="text-[10px] text-gray-500">Listában</span>
+                      ) : (
+                        <button
+                          onClick={() => addKolByHandle(kol.twitterUsername, kol.walletAddress ?? undefined)}
+                          className="text-xs text-purple-400 hover:text-purple-300"
+                        >
+                          Hozzáadás
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* KOL list */}
       <div className="glass rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-white/[0.06]">
@@ -254,6 +652,48 @@ export function MyKolsClient() {
                   </div>
                 )}
               </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* KOL-mentioned tokens — trending-style table */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-sm font-bold text-purple-400 uppercase tracking-wider">
+              KOL által említett Solana tokenek
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Csak contract címmel azonosított coinok. Klikk → ugyanaz a token oldal, mint a Trending-en.
+            </p>
+          </div>
+          <button
+            onClick={fetchKolTokens}
+            disabled={tokensLoading}
+            className="text-xs text-gray-400 hover:text-cyan-400 disabled:opacity-50"
+          >
+            {tokensLoading ? "Frissítés..." : "Frissítés"}
+          </button>
+        </div>
+        {tokensLoading && kolTokens.length === 0 ? (
+          <p className="text-gray-500 text-sm py-8 text-center">Tokenek betöltése...</p>
+        ) : (
+          <TokenTable
+            tokens={tableTokens}
+            showInterval="1h"
+            customKolCounts={customKolCounts}
+            kolCountLabel="Saját KOL"
+          />
+        )}
+        {kolTokens.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {kolTokens.slice(0, 5).map((r) => (
+              <p key={r.token.address} className="text-[10px] text-gray-600">
+                <span className="text-gray-400">{r.token.symbol}</span>
+                {" — "}
+                {r.myKols.map((h) => `@${h}`).join(", ")}
+              </p>
             ))}
           </div>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatPrice, formatMarketCap, timeAgo } from "@/lib/scoring";
+import { formatPrice, formatMarketCap, formatFollowers, timeAgo } from "@/lib/scoring";
 import { KlineChart } from "@/components/KlineChart";
 
 function SecurityBadge({ label, safe, warning, danger }: { label: string; safe?: boolean; warning?: boolean; danger?: boolean }) {
@@ -476,12 +476,6 @@ function RiskBar({ label, value }: { label: string; value: number }) {
       <span className="text-gray-400 w-10 text-right">{pct.toFixed(0)}%</span>
     </div>
   );
-}
-
-function formatFollowers(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
 }
 
 function truncateUrl(url: string): string {

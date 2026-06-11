@@ -4,7 +4,18 @@ import Link from "next/link";
 import type { TokenRank } from "@/lib/gmgn-client";
 import { scoreToken, signalColor, signalLabel, formatPrice, formatMarketCap, formatVolume, formatPercent, timeAgo } from "@/lib/scoring";
 
-export function TokenTable({ tokens, showInterval }: { tokens: TokenRank[]; showInterval?: string }) {
+export function TokenTable({
+  tokens,
+  showInterval,
+  customKolCounts,
+  kolCountLabel = "KOL",
+}: {
+  tokens: TokenRank[];
+  showInterval?: string;
+  /** Saját KOL említések száma tokenenként (address lowercase) */
+  customKolCounts?: Record<string, number>;
+  kolCountLabel?: string;
+}) {
   if (!tokens?.length) {
     return <p className="text-gray-500 text-center py-12">No tokens to display</p>;
   }
@@ -22,7 +33,7 @@ export function TokenTable({ tokens, showInterval }: { tokens: TokenRank[]; show
               <th className="text-right py-3 px-3">1h</th>
               <th className="text-right py-3 px-3">Swaps</th>
               <th className="text-right py-3 px-3">Holders</th>
-              <th className="text-right py-3 px-3">SM</th>
+              <th className="text-right py-3 px-3">{customKolCounts ? kolCountLabel : "SM"}</th>
               <th className="text-right py-3 px-3">Rug</th>
               <th className="text-center py-3 px-3">Signal</th>
               <th className="text-right py-3 px-3">Age</th>
@@ -73,14 +84,26 @@ export function TokenTable({ tokens, showInterval }: { tokens: TokenRank[]; show
                   </td>
                   <td className="py-2.5 px-3 text-right font-mono text-xs">{t.holder_count}</td>
                   <td className="py-2.5 px-3 text-right">
-                    {t.smart_degen_count > 0 && (
-                      <span className="text-xs font-bold text-cyan-400">{t.smart_degen_count}</span>
-                    )}
-                    {t.renowned_count > 0 && (
-                      <span className="text-xs text-purple-400 ml-1">+{t.renowned_count}K</span>
-                    )}
-                    {t.smart_degen_count === 0 && t.renowned_count === 0 && (
-                      <span className="text-gray-600">—</span>
+                    {customKolCounts ? (
+                      (customKolCounts[t.address.toLowerCase()] ?? 0) > 0 ? (
+                        <span className="text-xs font-bold text-purple-400">
+                          {customKolCounts[t.address.toLowerCase()]}K
+                        </span>
+                      ) : (
+                        <span className="text-gray-600">—</span>
+                      )
+                    ) : (
+                      <>
+                        {t.smart_degen_count > 0 && (
+                          <span className="text-xs font-bold text-cyan-400">{t.smart_degen_count}</span>
+                        )}
+                        {t.renowned_count > 0 && (
+                          <span className="text-xs text-purple-400 ml-1">+{t.renowned_count}K</span>
+                        )}
+                        {t.smart_degen_count === 0 && t.renowned_count === 0 && (
+                          <span className="text-gray-600">—</span>
+                        )}
+                      </>
                     )}
                   </td>
                   <td className={`py-2.5 px-3 text-right font-mono text-xs ${t.rug_ratio > 0.3 ? "text-brand-red" : t.rug_ratio > 0.1 ? "text-brand-yellow" : "text-gray-400"}`}>

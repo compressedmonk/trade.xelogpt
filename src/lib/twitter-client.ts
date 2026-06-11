@@ -29,6 +29,19 @@ export interface XUser {
   id: string;
   name: string;
   username: string;
+  public_metrics?: {
+    followers_count?: number;
+  };
+}
+
+export interface XUserMetrics {
+  username: string;
+  name: string;
+  followerCount: number;
+}
+
+function hasBearerToken(): boolean {
+  return Boolean(process.env.TWITTER_BEARER_TOKEN);
 }
 
 export interface XTweet {
@@ -42,6 +55,34 @@ export async function lookupUserByUsername(username: string): Promise<XUser | nu
     "user.fields": "name,username",
   });
   return data.data ?? null;
+}
+
+export async function lookupUsersByUsernames(usernames: string[]): Promise<XUserMetrics[]> {
+  if (!hasBearerToken() || usernames.length === 0) return [];
+
+  const unique = [...new Set(usernames.map((u) => u.replace(/^@/, "").trim()).filter(Boolean))];
+  const results: XUserMetrics[] = [];
+
+  for (let i = 0; i < unique.length; i += 100) {
+    const batch = unique.slice(i, i + 100);
+    try {
+      const data = await xGet<{ data?: XUser[] }>("/users/by", {
+        usernames: batch.join(","),
+        "user.fields": "name,username,public_metrics",
+      });
+      for (const user of data.data ?? []) {
+        results.push({
+          username: user.username.toLowerCase(),
+          name: user.name,
+          followerCount: user.public_metrics?.followers_count ?? 0,
+        });
+      }
+    } catch {
+      // skip failed batch
+    }
+  }
+
+  return results;
 }
 
 export async function fetchUserTweets(
