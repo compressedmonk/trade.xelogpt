@@ -75,6 +75,8 @@ model KolProfile {
   twitterUsername String            @unique
   displayName     String?
   twitterUserId   String?
+  profileType     String            @default("trader")
+  sentimentWeight Float             @default(1.0)
   enabled         Boolean           @default(true)
   createdAt       DateTime          @default(now())
   wallets         KolWallet[]
@@ -93,13 +95,22 @@ model KolWallet {
 }
 
 model KolMentionCache {
-  id             Int        @id @default(autoincrement())
-  tweetId        String     @unique
-  kolProfileId   Int
-  text           String
-  tokenSymbols   String?
-  tokenAddresses String?
-  tweetedAt      DateTime
-  fetchedAt      DateTime   @default(now())
-  kolProfile     KolProfile @relation(fields: [kolProfileId], references: [id], onDelete: Cascade)
+  id                   Int        @id @default(autoincrement())
+  tweetId              String     @unique
+  kolProfileId         Int
+  text                 String
+  tokenSymbols         String?
+  tokenAddresses       String?
+  topicCategory        String?
+  cryptoSentiment      String?
+  confidence           Float?
+  reasoning            String?
+  momentumStrength     String?
+  affectedAssets       String?
+  classificationStatus String     @default("pending")
+  classifiedAt         DateTime?
+  classificationModel  String?
+  tweetedAt            DateTime
+  fetchedAt            DateTime   @default(now())
+  kolProfile           KolProfile @relation(fields: [kolProfileId], references: [id], onDelete: Cascade)
 }

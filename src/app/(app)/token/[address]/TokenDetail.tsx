@@ -43,6 +43,7 @@ export function TokenDetail({
   kolTraders,
   signals,
   ownKols = [],
+  tokenSentiment = null,
 }: {
   address: string;
   info: any;
@@ -57,6 +58,20 @@ export function TokenDetail({
     type: "mention" | "trade";
     detail?: string;
   }>;
+  tokenSentiment?: {
+    tokenAddress: string;
+    index: number;
+    label: "bullish" | "neutral" | "bearish";
+    postCount: number;
+    posts: Array<{
+      tweetId: string;
+      twitterUsername: string;
+      cryptoSentiment: string;
+      reasoning: string | null;
+      text: string;
+      tweetedAt: string;
+    }>;
+  } | null;
 }) {
   if (!info) {
     return <p className="text-center text-gray-500 py-12">Token not found or API error</p>;
@@ -237,6 +252,62 @@ export function TokenDetail({
           </div>
         </div>
       </div>
+
+      {/* KOL Mood on this token */}
+      {tokenSentiment && tokenSentiment.postCount > 0 && (
+        <div className="glass rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/[0.06] bg-gradient-to-r from-cyan-500/15 to-transparent flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold text-cyan-400 uppercase tracking-wider">KOL Mood (saját)</h2>
+            <div className="flex items-center gap-2">
+              <span className={`text-lg font-bold ${
+                tokenSentiment.label === "bullish" ? "text-brand-green"
+                  : tokenSentiment.label === "bearish" ? "text-brand-red"
+                  : "text-brand-yellow"
+              }`}>
+                {tokenSentiment.index > 0 ? "+" : ""}{tokenSentiment.index}
+              </span>
+              <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                tokenSentiment.label === "bullish" ? "bg-brand-green/10 text-brand-green"
+                  : tokenSentiment.label === "bearish" ? "bg-brand-red/10 text-brand-red"
+                  : "bg-brand-yellow/10 text-brand-yellow"
+              }`}>
+                {tokenSentiment.label}
+              </span>
+              <span className="text-xs text-gray-500">{tokenSentiment.postCount} poszt</span>
+            </div>
+          </div>
+          <div className="p-4 space-y-2">
+            {tokenSentiment.posts.map((p) => (
+              <div key={p.tweetId} className="flex items-start justify-between gap-3 glass rounded-lg p-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`https://x.com/${p.twitterUsername}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-cyan-400 hover:underline shrink-0"
+                    >
+                      @{p.twitterUsername}
+                    </a>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                      p.cryptoSentiment === "bullish" ? "bg-brand-green/10 text-brand-green"
+                        : p.cryptoSentiment === "bearish" ? "bg-brand-red/10 text-brand-red"
+                        : "bg-brand-yellow/10 text-brand-yellow"
+                    }`}>
+                      {p.cryptoSentiment}
+                    </span>
+                    <span className="text-[10px] text-gray-600">{timeAgo(Math.floor(new Date(p.tweetedAt).getTime() / 1000))}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 truncate" title={p.text}>{p.text}</p>
+                  {p.reasoning && (
+                    <p className="text-[10px] text-gray-500 mt-0.5 italic">{p.reasoning}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Own KOLs on this token */}
       {ownKols.length > 0 && (

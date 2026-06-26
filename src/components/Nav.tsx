@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 const links = [
-  { href: "/trending", label: "Trending" },
-  { href: "/trenches", label: "Trenches" },
   { href: "/mykols", label: "Saját KOL-ok" },
+  { href: "/sentiment", label: "Sentiment" },
   { href: "/smartmoney", label: "Smart Money" },
   { href: "/copytrade", label: "Copy Trade" },
   { href: "/degen", label: "Degen Bot" },
+  { href: "/trending", label: "Trending" },
+  { href: "/trenches", label: "Trenches" },
 ];
 
 export function Nav() {
@@ -24,7 +25,7 @@ export function Nav() {
 
   return (
     <nav className="sticky top-0 z-50 flex items-center gap-1 px-5 py-3 glass-strong border-t-0 border-x-0 rounded-none">
-      <Link href="/trending" className="text-lg font-bold text-cyan-400 text-glow mr-6 tracking-tight">
+      <Link href="/mykols" className="text-lg font-bold text-cyan-400 text-glow mr-6 tracking-tight">
         Litt-Analyzer
       </Link>
       {links.map((l) => (

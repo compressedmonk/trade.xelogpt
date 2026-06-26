@@ -1,5 +1,6 @@
 import { getTokenInfo, getTokenSecurity, getTokenHolders, getTokenTraders, getTokenSignals } from "@/lib/gmgn-client";
 import { getOwnKolsOnToken } from "@/lib/kol-feed";
+import { computeTokenSentiment } from "@/lib/kol-sentiment-index";
 import { TokenDetail } from "./TokenDetail";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export default async function TokenPage({ params }: PageProps) {
   const chain = "sol";
   const address = params.address;
 
-  const [info, security, holders, kolTraders, signals, ownKols] = await Promise.all([
+  const [info, security, holders, kolTraders, signals, ownKols, tokenSentiment] = await Promise.all([
     getTokenInfo(chain, address).catch(() => null),
     getTokenSecurity(chain, address).catch(() => null),
     getTokenHolders(chain, address, { limit: 20, tag: "smart_degen" }).catch(() => null),
@@ -23,6 +24,7 @@ export default async function TokenPage({ params }: PageProps) {
       { signal_type: [6, 7, 11] },
     ]).catch(() => null),
     getOwnKolsOnToken(address).catch(() => []),
+    computeTokenSentiment(address).catch(() => null),
   ]);
 
   return (
@@ -34,6 +36,7 @@ export default async function TokenPage({ params }: PageProps) {
       kolTraders={kolTraders}
       signals={signals}
       ownKols={ownKols}
+      tokenSentiment={tokenSentiment}
     />
   );
 }

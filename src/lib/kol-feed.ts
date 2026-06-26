@@ -17,6 +17,10 @@ export interface KolFeedItem {
   detail?: string;
   cluster: boolean;
   clusterCount?: number;
+  topicCategory?: string | null;
+  cryptoSentiment?: string | null;
+  momentumStrength?: string | null;
+  sentimentReasoning?: string | null;
 }
 
 interface WalletTrade {
@@ -63,7 +67,8 @@ export async function syncKolMentions(): Promise<void> {
 
       for (const tweet of tweets) {
         const parsed = parseMentionsFromText(tweet.text);
-        if (!hasTokenMention(parsed)) continue;
+        const isNewsmaker = profile.profileType === "newsmaker";
+        if (!isNewsmaker && !hasTokenMention(parsed)) continue;
 
         await prisma.kolMentionCache.upsert({
           where: { tweetId: tweet.id },
@@ -75,6 +80,7 @@ export async function syncKolMentions(): Promise<void> {
             tokenSymbols: JSON.stringify(parsed.tokenSymbols),
             tokenAddresses: JSON.stringify(parsed.tokenAddresses),
             tweetedAt: new Date(tweet.created_at ?? Date.now()),
+            classificationStatus: isNewsmaker || hasTokenMention(parsed) ? "pending" : "done",
           },
         });
       }
@@ -107,11 +113,17 @@ function applyClusterFlags(items: KolFeedItem[]): KolFeedItem[] {
   });
 }
 
-export async function buildKolFeed(limit = 50): Promise<KolFeedItem[]> {
+export async function buildKolFeed(
+  limit = 50,
+  profileType?: "trader" | "newsmaker",
+): Promise<KolFeedItem[]> {
   await syncKolMentions();
 
   const profiles = await prisma.kolProfile.findMany({
-    where: { enabled: true },
+    where: {
+      enabled: true,
+      ...(profileType ? { profileType } : {}),
+    },
     include: { wallets: true, mentions: { orderBy: { tweetedAt: "desc" }, take: 20 } },
   });
 
@@ -132,6 +144,10 @@ export async function buildKolFeed(limit = 50): Promise<KolFeedItem[]> {
         tokenSymbol: symbols[0],
         detail: mention.text.slice(0, 120),
         cluster: false,
+        topicCategory: mention.topicCategory,
+        cryptoSentiment: mention.cryptoSentiment,
+        momentumStrength: mention.momentumStrength,
+        sentimentReasoning: mention.reasoning,
       });
     }
 

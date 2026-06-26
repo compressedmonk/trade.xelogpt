@@ -19,6 +19,8 @@ interface KolProfile {
   id: number;
   twitterUsername: string;
   displayName: string | null;
+  profileType?: string;
+  sentimentWeight?: number;
   enabled: boolean;
   wallets: KolWallet[];
 }
@@ -44,6 +46,7 @@ interface FeedItem {
   detail?: string;
   cluster: boolean;
   clusterCount?: number;
+  topicCategory?: string | null;
 }
 
 interface DiscoveredKol {
@@ -127,7 +130,7 @@ export function MyKolsClient() {
   const [botPollLoading, setBotPollLoading] = useState(false);
 
   const fetchProfiles = useCallback(async () => {
-    const res = await fetch("/api/kols");
+    const res = await fetch("/api/kols?profileType=trader");
     if (!res.ok) {
       setStatus("Hiba: KOL lista nem tölthető be (szerver hiba).");
       setProfiles([]);
@@ -140,7 +143,7 @@ export function MyKolsClient() {
   const fetchFeed = useCallback(async () => {
     setFeedLoading(true);
     try {
-      const res = await fetch("/api/kols/feed?limit=50");
+      const res = await fetch("/api/kols/feed?limit=50&profileType=trader");
       const data = await res.json();
       setFeed(Array.isArray(data) ? data : []);
     } finally {
@@ -257,6 +260,7 @@ export function MyKolsClient() {
           twitterUsername: normalized,
           wallets: wallet?.trim() ? [wallet.trim()] : [],
           autoResolve: !wallet?.trim(),
+          profileType: "trader",
         }),
       });
       const data = await res.json();

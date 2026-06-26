@@ -5,8 +5,14 @@ import { resolveWalletFromGmgn } from "@/lib/kol-resolve";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const profileTypeParam = req.nextUrl.searchParams.get("profileType");
+  const profileType =
+    profileTypeParam === "newsmaker" || profileTypeParam === "trader"
+      ? profileTypeParam
+      : undefined;
   const profiles = await prisma.kolProfile.findMany({
+    where: profileType ? { profileType } : undefined,
     include: { wallets: true },
     orderBy: { createdAt: "desc" },
   });
@@ -15,7 +21,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { twitterUsername, wallets, autoResolve } = body;
+  const { twitterUsername, wallets, autoResolve, profileType, sentimentWeight } = body;
 
   if (!twitterUsername) {
     return NextResponse.json({ error: "twitterUsername required" }, { status: 400 });
@@ -23,16 +29,22 @@ export async function POST(req: NextRequest) {
 
   const normalized = normalizeTwitterUsername(twitterUsername);
   let walletList: string[] = Array.isArray(wallets) ? wallets : [];
+  const type = profileType === "newsmaker" ? "newsmaker" : "trader";
+  const weight = typeof sentimentWeight === "number" && sentimentWeight > 0 ? sentimentWeight : 1.0;
 
-  if (walletList.length === 0 && autoResolve !== false) {
+  if (walletList.length === 0 && autoResolve !== false && type !== "newsmaker") {
     const resolved = await resolveWalletFromGmgn(normalized);
     if (resolved) walletList = [resolved];
   }
 
   const profile = await prisma.kolProfile.upsert({
     where: { twitterUsername: normalized },
-    update: { enabled: true },
-    create: { twitterUsername: normalized },
+    update: { enabled: true, profileType: type, sentimentWeight: weight },
+    create: {
+      twitterUsername: normalized,
+      profileType: type,
+      sentimentWeight: weight,
+    },
     include: { wallets: true },
   });
 
