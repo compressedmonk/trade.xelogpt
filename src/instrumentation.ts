@@ -4,5 +4,7 @@ export async function register() {
     startKolCopyTraderLoop();
     const { startKolSyncLoop } = await import("@/lib/kol-sync-loop");
     startKolSyncLoop();
+    const { startApiHealthAlertLoop } = await import("@/lib/api-health-alerts");
+    startApiHealthAlertLoop();
   }
 }

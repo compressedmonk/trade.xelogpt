@@ -70,7 +70,7 @@ function parseRateLimitHeaders(headers: Headers): RateLimitInfo | undefined {
   };
 }
 
-async function probeTwitter(): Promise<ServiceProbe> {
+export async function probeTwitter(): Promise<ServiceProbe> {
   const token = process.env.TWITTER_BEARER_TOKEN;
   if (!token) {
     return { configured: false, status: "off", latencyMs: null, message: "TWITTER_BEARER_TOKEN nincs beállítva" };
@@ -124,7 +124,7 @@ async function probeTwitter(): Promise<ServiceProbe> {
   }
 }
 
-async function probeOpenAI(): Promise<ServiceProbe & { model: string | null }> {
+export async function probeOpenAI(): Promise<ServiceProbe & { model: string | null }> {
   const apiKey = process.env.OPENAI_API_KEY;
   const adminKey = process.env.OPENAI_ADMIN_KEY;
   const model = process.env.KOL_SENTIMENT_MODEL ?? "o3";
