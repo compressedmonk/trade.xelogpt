@@ -16,10 +16,12 @@
     "telegram:test": "node scripts/require-node.mjs && tsx scripts/telegram-test.ts",
     "wallet:new": "node scripts/require-node.mjs && tsx scripts/wallet-new.ts",
     "wallet:balance": "node scripts/require-node.mjs && tsx scripts/wallet-balance.ts",
+    "wallet:add-extra": "node scripts/require-node.mjs && tsx scripts/wallet-add-extra.ts",
+    "wallet:new-extra": "node scripts/require-node.mjs && tsx scripts/wallet-new-extra.ts",
     "test:buy": "node scripts/require-node.mjs && tsx scripts/test-buy.ts",
     "sweep": "node scripts/require-node.mjs && tsx scripts/sweep.ts",
     "status": "node scripts/require-node.mjs && tsx scripts/status.ts",
-    "test": "tsx tests/ca-filter.test.ts && tsx tests/zlib-inflate.test.ts",
+    "test": "tsx tests/ca-filter.test.ts && tsx tests/watch-profiles.test.ts && tsx tests/zlib-inflate.test.ts",
     "build": "tsc --noEmit"
   },
   "dependencies": {

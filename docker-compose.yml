@@ -3,7 +3,7 @@ services:
     build: .
     container_name: soltrade_web
     ports:
-      - "3300:3000"
+      - "127.0.0.1:3300:3000"
     environment:
       - APP_PASSWORD=${APP_PASSWORD}
       - SESSION_SECRET=${SESSION_SECRET}
@@ -22,7 +22,6 @@ services:
       - API_HEALTH_CHECK_MS=${API_HEALTH_CHECK_MS:-300000}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
-      - DEGEN_ENV_PATH=/opt/degen-bot/.env
       - SOLANA_RPC_URL=${SOLANA_RPC_URL:-}
       - TRADING_WALLET_PRIVATE_KEY=${TRADING_WALLET_PRIVATE_KEY:-}
       - KOL_COPY_TRADE_ENABLED=${KOL_COPY_TRADE_ENABLED:-false}
@@ -32,14 +31,16 @@ services:
       - JUPITER_API_KEY=${JUPITER_API_KEY:-}
       - DEGEN_DB_PATH=/app/degen-data/degen.db
       - DEGEN_BOT_WALLET=${DEGEN_BOT_WALLET:-}
+      - DEGEN_EXTRA_BOT_WALLET=${DEGEN_EXTRA_BOT_WALLET:-}
       - DEGEN_DEST_WALLET=${DEGEN_DEST_WALLET:-}
+      - DEGEN_WATCH_USER_ID=${DEGEN_WATCH_USER_ID:-}
+      - DEGEN_EXTRA_WATCH=${DEGEN_EXTRA_WATCH:-}
       - DEGEN_GAS_RESERVE_SOL=${DEGEN_GAS_RESERVE_SOL:-0.02}
       - DEGEN_DRY_RUN=${DEGEN_DRY_RUN:-false}
       - DATABASE_URL=file:/app/data/dev.db
     volumes:
       - dbdata:/app/data
       - /opt/degen-bot/data:/app/degen-data:ro
-      - /opt/degen-bot/.env:/opt/degen-bot/.env:ro
     restart: unless-stopped
 
 volumes:

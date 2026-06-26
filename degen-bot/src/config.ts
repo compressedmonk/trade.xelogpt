@@ -1,6 +1,7 @@
 import { config as loadEnv } from "dotenv";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProfileWallets, loadWatchProfiles } from "./watch-profiles.js";
 
 const __configDir = dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: resolve(__configDir, "../.env"), override: true });
@@ -22,7 +23,10 @@ export const config = {
   userToken: optional("DISCORD_USER_TOKEN", ""),
   guildId: optional("DISCORD_GUILD_ID", ""),
   channelId: optional("DEGEN_CHANNEL_ID", ""),
+  /** Primary watched user — full spendable balance on DEGEN_WALLET_PRIVATE_KEY. */
   watchUserIds: parseIdSet(optional("DEGEN_WATCH_USER_ID", "")),
+  /** Extra users: userId:buyFraction joined by | (shared wallet; 0.3 = 30% spendable). */
+  extraWatch: optional("DEGEN_EXTRA_WATCH", ""),
   profileDir: resolve(optional("DISCORD_PROFILE_DIR", "./data/discord-profile")),
 
   telegramBotToken: optional("TELEGRAM_BOT_TOKEN", ""),
@@ -30,6 +34,8 @@ export const config = {
 
   rpcUrl: optional("SOLANA_RPC_URL", ""),
   walletPrivateKey: optional("DEGEN_WALLET_PRIVATE_KEY", ""),
+  /** Shared wallet for all DEGEN_EXTRA_WATCH users. */
+  extraWalletPrivateKey: optional("DEGEN_EXTRA_WALLET_PRIVATE_KEY", ""),
   /** Personal wallet — bought tokens are swept here after each buy. */
   destWallet: optional("DEGEN_DEST_WALLET", ""),
   gasReserveSol: Number(optional("DEGEN_GAS_RESERVE_SOL", "0.02")),
@@ -56,4 +62,7 @@ export function assertTradeConfig(): void {
   if (missing.length > 0) {
     throw new Error(`Missing required env: ${missing.join(", ")}`);
   }
+
+  loadWatchProfiles();
+  assertProfileWallets();
 }

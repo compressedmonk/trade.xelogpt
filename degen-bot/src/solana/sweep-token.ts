@@ -7,12 +7,13 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
+  Keypair,
   PublicKey,
   Transaction,
   type ConfirmOptions,
 } from "@solana/web3.js";
 import { config } from "../config.js";
-import { getConnection, getKeypair } from "./wallet.js";
+import { getConnection } from "./wallet.js";
 
 export interface SweepResult {
   status: "swept" | "skipped";
@@ -31,12 +32,11 @@ function tokenProgramForMint(owner: PublicKey): PublicKey {
  * Sends the bot wallet's full SPL balance for `mint` to DEGEN_DEST_WALLET.
  * Creates the destination ATA if needed. No-op when dest wallet is unset.
  */
-export async function sweepTokenToDest(mint: string): Promise<SweepResult | null> {
+export async function sweepTokenToDest(mint: string, owner: Keypair): Promise<SweepResult | null> {
   const dest = config.destWallet.trim();
   if (!dest) return null;
 
   const connection = getConnection();
-  const owner = getKeypair();
   const mintPk = new PublicKey(mint);
   const destPk = new PublicKey(dest);
 

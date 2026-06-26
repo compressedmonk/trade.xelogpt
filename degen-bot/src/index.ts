@@ -3,8 +3,7 @@ import { DiscordGateway } from "./discord/gateway.js";
 import { resolveUserToken } from "./discord/token.js";
 import { extractDegenCa } from "./discord/ca-filter.js";
 import type { DiscordMessage } from "./discord/types.js";
-import { buyAllSol } from "./solana/buy-all.js";
-import { getWalletAddress } from "./solana/wallet.js";
+import { buyForProfile } from "./solana/buy-all.js";
 import { DegenStore } from "./journal/store.js";
 import {
   formatBootMessage,
@@ -14,6 +13,12 @@ import {
   sendTelegram,
 } from "./telegram.js";
 import { startBalanceWatcher } from "./balance-watcher.js";
+import {
+  allWatchUserIds,
+  formatProfileSummary,
+  getProfileForUser,
+  loadWatchProfiles,
+} from "./watch-profiles.js";
 import { log } from "./util/logger.js";
 
 async function handleTrigger(
@@ -22,19 +27,31 @@ async function handleTrigger(
   mint: string,
 ): Promise<void> {
   const authorId = msg.author?.id ?? "";
+  const profile = getProfileForUser(authorId);
+  if (!profile) {
+    log.warn("trigger", `no profile for author=${authorId}`);
+    return;
+  }
 
   if (!store.claim(msg.id, mint, authorId)) {
     log.warn("trigger", `duplicate ignored msg=${msg.id} mint=${mint}`);
     return;
   }
 
-  log.buy(`TRIGGER mint=${mint} author=${authorId} msg=${msg.id}`);
-  store.logEvent("trigger", { discordMsgId: msg.id, mint, authorId });
+  log.buy(`TRIGGER mint=${mint} author=${authorId} profile=${profile.tag} buy=${profile.buyMode === "full" ? "full" : `${((profile.buyFraction ?? 0) * 100).toFixed(0)}%`} msg=${msg.id}`);
+  store.logEvent("trigger", {
+    discordMsgId: msg.id,
+    mint,
+    authorId,
+    profile: profile.tag,
+    buyMode: profile.buyMode,
+    buyFraction: profile.buyFraction,
+  });
 
-  void sendTelegram(formatCaAlert(msg, mint));
+  void sendTelegram(formatCaAlert(msg, mint, profile));
 
   try {
-    const result = await buyAllSol(mint);
+    const result = await buyForProfile(mint, profile);
     store.recordResult(msg.id, result);
     if (result.status === "bought") {
       log.buy(`BOUGHT ${result.solSpent} SOL → ${mint} tx=${result.txSignature} (${result.latencyMs}ms)`);
@@ -46,12 +63,12 @@ async function handleTrigger(
     } else {
       log.warn("buy", `skipped ${mint}: ${result.reason}`);
     }
-    void sendTelegram(formatBuyResult(mint, result));
+    void sendTelegram(formatBuyResult(mint, result, profile));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     store.recordError(msg.id, message);
     log.error("buy", `failed ${mint}: ${message}`);
-    void sendTelegram(formatBuyError(mint, message));
+    void sendTelegram(formatBuyError(mint, message, profile));
   }
 }
 
@@ -59,17 +76,16 @@ export async function runDegenBot(): Promise<void> {
   assertTradeConfig();
   const token = resolveUserToken();
   const store = new DegenStore(config.dbPath);
+  const profiles = loadWatchProfiles();
 
   log.info("boot", `degen-bot starting (${config.dryRun ? "DRY_RUN" : "LIVE"})`);
-  log.info("boot", `channel=${config.channelId} watch=${[...config.watchUserIds].join(",")}`);
-  if (config.walletPrivateKey) {
-    log.info("boot", `wallet=${getWalletAddress()} reserve=${config.gasReserveSol} SOL slippage=${config.slippageBps}bps`);
-    if (config.destWallet) log.info("boot", `sweep dest=${config.destWallet}`);
-  } else if (!config.dryRun) {
-    throw new Error("LIVE mode requires DEGEN_WALLET_PRIVATE_KEY");
+  log.info("boot", `channel=${config.channelId}`);
+  for (const profile of profiles) {
+    log.info("boot", formatProfileSummary(profile));
   }
+  if (config.destWallet) log.info("boot", `sweep dest=${config.destWallet}`);
 
-  const ctx = { channelId: config.channelId, watchUserIds: config.watchUserIds };
+  const ctx = { channelId: config.channelId, watchUserIds: allWatchUserIds() };
 
   const gateway = new DiscordGateway(token, {
     onReady: () => {

@@ -3,4 +3,8 @@ node_modules
 .git
 .config
 *.md
+.env
+.env.*
 .env.local
+degen-bot/.env
+degen-bot/data

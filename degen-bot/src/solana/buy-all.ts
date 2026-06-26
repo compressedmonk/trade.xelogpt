@@ -1,6 +1,7 @@
 import { LAMPORTS_PER_SOL, VersionedTransaction } from "@solana/web3.js";
 import { config } from "../config.js";
-import { getConnection, getKeypair } from "./wallet.js";
+import type { WatchProfile } from "../watch-profiles.js";
+import { getConnection, getKeypairFromPrivateKey, getWalletAddressFromPrivateKey } from "./wallet.js";
 import { sweepTokenToDest, type SweepResult } from "./sweep-token.js";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
@@ -20,6 +21,9 @@ export interface BuyResult {
   sweep?: SweepResult | null;
   reason?: string;
   latencyMs: number;
+  profileUserId?: string;
+  buyFraction?: number;
+  walletAddress?: string;
 }
 
 function jupiterHeaders(): Record<string, string> {
@@ -67,51 +71,75 @@ async function fetchSwapTransaction(
   return data.swapTransaction as string;
 }
 
-/**
- * Spends the wallet's entire SOL balance (minus the gas reserve) on `mint` via
- * Jupiter. In DRY_RUN it fetches a quote only — no signing or broadcast. When no
- * wallet key is configured (dry-run dev), it previews using DEGEN_MIN_BUY_SOL.
- */
-export async function buyAllSol(mint: string): Promise<BuyResult> {
-  const startedAt = Date.now();
+function spendableLamports(balance: number): number {
   const reserveLamports = Math.floor(config.gasReserveSol * LAMPORTS_PER_SOL);
-  const minLamports = Math.floor(config.minBuySol * LAMPORTS_PER_SOL);
-  const hasWallet = Boolean(config.walletPrivateKey);
+  return Math.max(0, balance - reserveLamports);
+}
 
-  let spendableLamports: number;
-  if (hasWallet) {
-    const balance = await getConnection().getBalance(getKeypair().publicKey);
-    spendableLamports = balance - reserveLamports;
-  } else {
-    // No wallet (dry-run preview): use the configured minimum as a nominal size.
-    spendableLamports = minLamports;
+function resolveBuyLamports(balance: number, profile: WatchProfile): number {
+  const spendable = spendableLamports(balance);
+
+  if (profile.buyMode === "full") {
+    return spendable;
   }
 
-  if (spendableLamports < minLamports) {
+  const fraction = Math.min(1, Math.max(0, profile.buyFraction ?? 0));
+  return Math.floor(spendable * fraction);
+}
+
+/**
+ * Buys `mint` using the profile's wallet. Primary: full spendable balance.
+ * Extra: buyFraction of spendable on the shared extra wallet.
+ */
+export async function buyForProfile(mint: string, profile: WatchProfile): Promise<BuyResult> {
+  const startedAt = Date.now();
+  const minLamports = Math.floor(config.minBuySol * LAMPORTS_PER_SOL);
+  const hasWallet = Boolean(profile.walletPrivateKey);
+  const walletAddress = hasWallet
+    ? getWalletAddressFromPrivateKey(profile.walletPrivateKey)
+    : undefined;
+
+  let amountLamports: number;
+  if (hasWallet) {
+    const wallet = getKeypairFromPrivateKey(profile.walletPrivateKey);
+    const balance = await getConnection().getBalance(wallet.publicKey);
+    amountLamports = resolveBuyLamports(balance, profile);
+  } else {
+    amountLamports = minLamports;
+  }
+
+  const base = {
+    mint,
+    profileUserId: profile.userId,
+    buyFraction: profile.buyFraction,
+    walletAddress,
+  };
+
+  if (amountLamports < minLamports) {
     return {
       status: "skipped",
-      mint,
       solSpent: 0,
-      reason: `spendable ${spendableLamports / LAMPORTS_PER_SOL} SOL below min ${config.minBuySol}`,
+      reason: `spendable ${amountLamports / LAMPORTS_PER_SOL} SOL below min ${config.minBuySol}`,
       latencyMs: Date.now() - startedAt,
+      ...base,
     };
   }
 
-  const quote = await fetchQuote(mint, spendableLamports);
-  const solSpent = spendableLamports / LAMPORTS_PER_SOL;
+  const quote = await fetchQuote(mint, amountLamports);
+  const solSpent = amountLamports / LAMPORTS_PER_SOL;
   const outAmount = String(quote.outAmount ?? "0");
 
   if (config.dryRun) {
     return {
       status: "dry_run",
-      mint,
       solSpent,
       outAmount,
       latencyMs: Date.now() - startedAt,
+      ...base,
     };
   }
 
-  const wallet = getKeypair();
+  const wallet = getKeypairFromPrivateKey(profile.walletPrivateKey);
   const connection = getConnection();
   const swapB64 = await fetchSwapTransaction(quote, wallet.publicKey.toBase58());
   const tx = VersionedTransaction.deserialize(Buffer.from(swapB64, "base64"));
@@ -126,15 +154,23 @@ export async function buyAllSol(mint: string): Promise<BuyResult> {
     throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
   }
 
-  const sweep = await sweepTokenToDest(mint);
+  const sweep = await sweepTokenToDest(mint, wallet);
 
   return {
     status: "bought",
-    mint,
     solSpent,
     outAmount,
     txSignature,
     sweep,
     latencyMs: Date.now() - startedAt,
+    ...base,
   };
+}
+
+/** Primary wallet buy — convenience wrapper for scripts. */
+export async function buyAllSol(mint: string): Promise<BuyResult> {
+  const { loadWatchProfiles } = await import("../watch-profiles.js");
+  const primary = loadWatchProfiles()[0];
+  if (!primary) throw new Error("No watch profiles configured");
+  return buyForProfile(mint, primary);
 }

@@ -1,6 +1,8 @@
 import { config } from "./config.js";
 import type { DiscordMessage } from "./discord/types.js";
 import type { BuyResult } from "./solana/buy-all.js";
+import type { WatchProfile } from "./watch-profiles.js";
+import { formatProfileSummary, loadWatchProfiles } from "./watch-profiles.js";
 
 const TG_API = `https://api.telegram.org/bot${config.telegramBotToken}`;
 
@@ -41,27 +43,41 @@ function authorLabel(msg: DiscordMessage): string {
   return `${name} (<code>${id}</code>)`;
 }
 
-export function formatCaAlert(msg: DiscordMessage, mint: string): string {
+function profileBuyLabel(profile: WatchProfile): string {
+  if (profile.buyMode === "full") return "full egyenleg";
+  return `${((profile.buyFraction ?? 0) * 100).toFixed(0)}% spendable`;
+}
+
+export function formatCaAlert(msg: DiscordMessage, mint: string, profile?: WatchProfile): string {
   const lines = [
     "<b>CA találat</b>",
     "",
     `Mint: <code>${mint}</code>`,
     `User: ${authorLabel(msg)}`,
+  ];
+  if (profile) {
+    lines.push(`Profil: ${profile.tag} · buy ${profileBuyLabel(profile)}`);
+  }
+  lines.push(
     `Msg: <code>${msg.id}</code>`,
     "",
     `<a href="https://gmgn.ai/sol/token/${mint}">GMGN</a> · <a href="https://dexscreener.com/solana/${mint}">DexScreener</a>`,
-  ];
+  );
   if (mint.endsWith("pump")) {
     lines.push(`<a href="https://pump.fun/coin/${mint}">pump.fun</a>`);
   }
   return lines.join("\n");
 }
 
-export function formatBuyResult(mint: string, result: BuyResult): string {
+export function formatBuyResult(mint: string, result: BuyResult, profile?: WatchProfile): string {
   const mode = config.dryRun ? "DRY_RUN" : "LIVE";
+  const profileLine = profile
+    ? `${profile.tag} user <code>${profile.userId}</code> · ${profileBuyLabel(profile)}`
+    : "";
   if (result.status === "bought") {
     const lines = [
       `<b>Vásárlás OK</b> (${mode})`,
+      profileLine,
       `Mint: <code>${mint}</code>`,
       `SOL: ${result.solSpent}`,
       result.outAmount ? `Out: ${result.outAmount}` : "",
@@ -87,6 +103,7 @@ export function formatBuyResult(mint: string, result: BuyResult): string {
   if (result.status === "dry_run") {
     return [
       `<b>DRY_RUN</b> — vásárlás nem történt`,
+      profileLine,
       `Mint: <code>${mint}</code>`,
       `SOL: ${result.solSpent}`,
       result.outAmount ? `Quote out: ${result.outAmount}` : "",
@@ -97,33 +114,68 @@ export function formatBuyResult(mint: string, result: BuyResult): string {
   }
   return [
     `<b>Kihagyva</b> (${mode})`,
+    profileLine,
     `Mint: <code>${mint}</code>`,
     result.reason ?? "unknown",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function formatBootMessage(): string {
+  const profiles = loadWatchProfiles();
   return [
     "<b>degen-bot elindult</b>",
     `Mode: ${config.dryRun ? "DRY_RUN" : "LIVE"}`,
     `Channel: <code>${config.channelId}</code>`,
-    `Watch: ${[...config.watchUserIds].map((id) => `<code>${id}</code>`).join(", ")}`,
+    "",
+    "<b>Watch profilok</b>",
+    ...profiles.map((p) => formatProfileSummary(p)),
+    "",
     config.destWallet ? `Sweep → <code>${config.destWallet}</code>` : "Sweep: off (nincs DEGEN_DEST_WALLET)",
   ].join("\n");
 }
 
-export function formatBuyError(mint: string, message: string): string {
-  return [`<b>Vásárlás hiba</b>`, `Mint: <code>${mint}</code>`, message].join("\n");
+export function formatBuyError(mint: string, message: string, profile?: WatchProfile): string {
+  const profileLine = profile ? `Profil: ${profile.tag} <code>${profile.userId}</code>` : "";
+  return [`<b>Vásárlás hiba</b>`, profileLine, `Mint: <code>${mint}</code>`, message]
+    .filter(Boolean)
+    .join("\n");
 }
 
-export function formatBalanceChange(address: string, sol: number, deltaSol: number): string {
+export function formatBalanceChange(
+  address: string,
+  sol: number,
+  deltaSol: number,
+  label?: string,
+): string {
   const dir = deltaSol >= 0 ? "📥 Beérkezett" : "📤 Kimenő";
+  const walletLabel = label === "primary" ? "Primary tárca" : label === "extra wallet" ? "Extra tárca" : label;
+  const title = walletLabel
+    ? `<b>${walletLabel} — egyenleg változás</b>`
+    : "<b>Bot tárca egyenleg változás</b>";
   return [
-    `<b>Bot tárca egyenleg változás</b>`,
+    title,
     "",
     `${dir}: <b>${deltaSol >= 0 ? "+" : ""}${deltaSol.toFixed(6)} SOL</b>`,
     `Új egyenleg: <b>${sol.toFixed(6)} SOL</b>`,
     `Cím: <code>${address}</code>`,
     `<a href="https://solscan.io/account/${address}">Solscan</a>`,
   ].join("\n");
+}
+
+export function formatWalletsSnapshot(
+  wallets: { label: string; address: string; sol: number }[],
+): string {
+  const lines = ["<b>Bot tárcák — jelenlegi egyenleg</b>", ""];
+  for (const w of wallets) {
+    const walletLabel = w.label === "primary" ? "Primary" : w.label === "extra wallet" ? "Extra (shared)" : w.label;
+    lines.push(
+      `<b>${walletLabel}</b>: ${w.sol.toFixed(6)} SOL`,
+      `<code>${w.address}</code>`,
+      `<a href="https://solscan.io/account/${w.address}">Solscan</a>`,
+      "",
+    );
+  }
+  return lines.join("\n").trimEnd();
 }
