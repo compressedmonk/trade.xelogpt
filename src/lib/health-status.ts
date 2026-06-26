@@ -3,7 +3,7 @@ import os from "os";
 import { getBotStatus } from "@/lib/kol-copy-trader";
 import { getSyncStatus } from "@/lib/kol-sync-loop";
 import { prisma } from "@/lib/prisma";
-import { isTelegramConfigured } from "@/lib/telegram";
+import { getTelegramBotToken, isTelegramConfigured } from "@/lib/telegram";
 
 export type HealthLevel = "ok" | "warn" | "error" | "off";
 
@@ -260,13 +260,13 @@ async function probeGmgn(): Promise<ServiceProbe> {
 }
 
 async function probeTelegram(): Promise<ServiceProbe> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const token = getTelegramBotToken();
   if (!isTelegramConfigured()) {
     return {
       configured: false,
       status: "off",
       latencyMs: null,
-      message: "TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID nincs beállítva",
+      message: "TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID nincs beállítva (degen-bot/.env fallback)",
     };
   }
 

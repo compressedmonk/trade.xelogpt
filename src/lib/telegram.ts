@@ -1,18 +1,25 @@
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
-const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
+import { resolveEnv } from "@/lib/shared-env";
+
+export function getTelegramBotToken(): string {
+  return resolveEnv("TELEGRAM_BOT_TOKEN");
+}
+
+export function getTelegramChatId(): string {
+  return resolveEnv("TELEGRAM_CHAT_ID");
+}
 
 export function isTelegramConfigured(): boolean {
-  return BOT_TOKEN.length > 0 && CHAT_ID.length > 0;
+  return getTelegramBotToken().length > 0 && getTelegramChatId().length > 0;
 }
 
 export async function sendMessage(text: string, chatId?: string): Promise<boolean> {
-  if (!BOT_TOKEN) return false;
-  const target = chatId ?? CHAT_ID;
+  const token = getTelegramBotToken();
+  if (!token) return false;
+  const target = chatId ?? getTelegramChatId();
   if (!target) return false;
 
   try {
-    const res = await fetch(`${TG_API}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -29,7 +36,8 @@ export async function sendMessage(text: string, chatId?: string): Promise<boolea
 }
 
 export async function setWebhook(url: string): Promise<any> {
-  const res = await fetch(`${TG_API}/setWebhook`, {
+  const token = getTelegramBotToken();
+  const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url, allowed_updates: ["message"] }),
@@ -38,7 +46,8 @@ export async function setWebhook(url: string): Promise<any> {
 }
 
 export async function deleteWebhook(): Promise<any> {
-  const res = await fetch(`${TG_API}/deleteWebhook`, { method: "POST" });
+  const token = getTelegramBotToken();
+  const res = await fetch(`https://api.telegram.org/bot${token}/deleteWebhook`, { method: "POST" });
   return res.json();
 }
 
