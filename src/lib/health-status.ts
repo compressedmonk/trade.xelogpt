@@ -179,11 +179,37 @@ async function probeOpenAI(): Promise<ServiceProbe & { model: string | null }> {
             granted: credits.total_granted ?? null,
             currency: "USD",
           };
+          balanceNote = null;
         } else {
-          balanceNote = "Admin kulcs nem adott credit infót";
+          const startTime = Math.floor(Date.now() / 1000) - 86400 * 30;
+          const costsRes = await fetch(
+            `https://api.openai.com/v1/organization/costs?start_time=${startTime}&limit=31`,
+            { headers: { Authorization: `Bearer ${adminKey}` }, cache: "no-store" },
+          );
+          if (costsRes.ok) {
+            const costs = (await costsRes.json()) as {
+              data?: Array<{ results?: Array<{ amount?: { value?: number } }> }>;
+            };
+            let totalCents = 0;
+            for (const bucket of costs.data ?? []) {
+              for (const row of bucket.results ?? []) {
+                totalCents += row.amount?.value ?? 0;
+              }
+            }
+            const totalUsd = totalCents / 100;
+            balance = {
+              available: null,
+              used: totalUsd,
+              granted: null,
+              currency: "USD",
+            };
+            balanceNote = `30 napi költség: $${totalUsd.toFixed(2)} (egyenleg csak dashboardon)`;
+          } else {
+            balanceNote = "Admin kulcs nem adott billing infót";
+          }
         }
       } catch {
-        balanceNote = "Credit lekérés sikertelen";
+        balanceNote = "Billing lekérés sikertelen";
       }
     } else {
       balanceNote = "Egyenleghez OPENAI_ADMIN_KEY kell";

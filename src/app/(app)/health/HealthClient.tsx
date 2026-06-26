@@ -201,11 +201,13 @@ export function HealthClient() {
                   <span className="text-brand-green font-medium">{fmtUsd(data.openai.balance.available)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Felhasznált</span>
+                  <span className="text-gray-500 block">
+                    {data.openai.balance.available == null ? "30 napi költség" : "Felhasznált"}
+                  </span>
                   <span className="text-gray-300">{fmtUsd(data.openai.balance.used)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">Összesen</span>
+                  <span className="text-gray-500 block">Összes credit</span>
                   <span className="text-gray-300">{fmtUsd(data.openai.balance.granted)}</span>
                 </div>
               </div>
