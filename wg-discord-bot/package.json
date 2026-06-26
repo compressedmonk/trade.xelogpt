@@ -1,0 +1,33 @@
+{
+  "name": "wg-discord-bot",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "type": "module",
+  "scripts": {
+    "discord:login": "tsx src/discord/login.ts",
+    "discord:discover": "tsx src/discord/discover-ids.ts",
+    "discord:pick": "tsx src/discord/pick-channel.ts",
+    "spike": "tsx src/discord/spike.ts",
+    "spike:unlock": "tsx src/discord/spike-unlock.ts",
+    "watch": "node scripts/require-node.mjs && tsx src/index.ts",
+    "dashboard": "node scripts/require-node.mjs && tsx src/dashboard/server.ts",
+    "test": "tsx tests/snowflake.test.ts && tsx tests/event-time.test.ts && tsx tests/gateway-parser.test.ts && tsx tests/unlock.test.ts && tsx tests/dom-unlock-scan.test.ts && tsx tests/limit-signal.test.ts && tsx tests/tsla-single-entry.test.ts && tsx tests/direct-signal.test.ts && tsx tests/dca-ladder.test.ts && tsx tests/alert-signal.test.ts && tsx tests/alert-wg-format.test.ts && tsx tests/watcher-logic.test.ts && tsx tests/db-store.test.ts && tsx tests/limit-filled.test.ts && tsx tests/executor-dry.test.ts && tsx tests/binance-e2e.test.ts",
+    "test:e2e": "BINANCE_E2E=1 tsx tests/binance-e2e.test.ts",
+    "build": "tsc --noEmit",
+    "postinstall": "playwright install chromium || true"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^16.4.7",
+    "playwright": "^1.50.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  }
+}

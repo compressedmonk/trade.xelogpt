@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WG Bot Dashboard</title>
+  <style>
+    :root {
+      --bg: #1e1f22;
+      --panel: #2b2d31;
+      --text: #dbdee1;
+      --muted: #949ba4;
+      --green: #23a559;
+      --yellow: #f0b232;
+      --red: #da373c;
+      --blue: #5865f2;
+      --border: #3f4147;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.4;
+    }
+    header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    h1 { margin: 0; font-size: 1.1rem; }
+    .stats { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); }
+    .stats strong { color: var(--text); }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge.dry { background: #3a2f00; color: var(--yellow); }
+    .badge.live { background: #1a3a24; color: var(--green); }
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    section.full { grid-column: 1 / -1; }
+    section h2 {
+      margin: 0;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border);
+      background: #232428;
+    }
+    .list { max-height: 70vh; overflow-y: auto; }
+    .trade, .event {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .trade:last-child, .event:last-child { border-bottom: none; }
+    .trade-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .asset { font-weight: 700; font-size: 1rem; }
+    .meta { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+    .status-pending_limit { color: var(--yellow); }
+    .status-partial_fill, .status-active { color: var(--green); }
+    .status-closed { color: var(--muted); }
+    .legs { font-size: 0.78rem; color: var(--muted); margin: 0.4rem 0; }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+    button {
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.1); }
+    button.danger { background: var(--red); }
+    button.secondary { background: #4e5058; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .event-type { font-weight: 600; font-size: 0.82rem; }
+    .event-type.alert_no_trade { color: var(--muted); }
+    .event-type.trade_created, .event-type.dry_run_orders { color: var(--green); }
+    .event-type.immediate_close, .event-type.cancel_limit { color: var(--yellow); }
+    .payload { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; word-break: break-word; }
+    .event-head { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
+    .event-trader { color: var(--blue); font-weight: 600; font-size: 0.82rem; }
+    .event-reason { font-size: 0.78rem; color: #b5bac1; margin-top: 0.15rem; }
+    .empty { padding: 2rem; text-align: center; color: var(--muted); }
+    .refresh { font-size: 0.8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>WG Bot Dashboard</h1>
+      <div class="refresh" id="updated">—</div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+  <main>
+    <section>
+      <h2>Nyitott / aktív trade-ek</h2>
+      <div class="list" id="open-trades"></div>
+    </section>
+    <section>
+      <h2>Összes trade (journal)</h2>
+      <div class="list" id="all-trades"></div>
+    </section>
+    <section class="full">
+      <h2>Események (log / alerts / skip)</h2>
+      <div class="list" id="events"></div>
+    </section>
+  </main>
+  <script>
+    async function api(path, opts) {
+      const r = await fetch(path, opts);
+      return r.json();
+    }
+
+    function legSummary(legs) {
+      return legs.map(l => `L${l.step} ${l.limitPrice} [${l.status}]`).join(" · ");
+    }
+
+    function tradeCard(t, showActions) {
+      const closed = t.status === "closed";
+      const actions = showActions && !closed ? `
+        <div class="actions">
+          <button onclick="act('${t.id}','move-be')">SL → BE</button>
+          <button class="secondary" onclick="act('${t.id}','cancel')">Limit cancel</button>
+          <button class="danger" onclick="act('${t.id}','close',{pct:100})">Close 100%</button>
+          <button class="danger" onclick="act('${t.id}','close',{pct:50})">Close 50%</button>
+        </div>` : "";
+      return `<div class="trade">
+        <div class="trade-head">
+          <div>
+            <div class="asset">${t.asset} <span class="status-${t.status}">${t.status}</span></div>
+            <div class="meta">@${t.trader} · ${t.side} · ${t.symbol} · risk ${t.signalRiskPct}%</div>
+            <div class="meta">Entry ${t.signalEntryMin}–${t.signalEntryMax} · SL ${t.signalStopLoss}</div>
+            <div class="legs">${legSummary(t.legs)}</div>
+          </div>
+          <div class="meta">${t.createdAt?.slice(0, 16) ?? ""}</div>
+        </div>
+        ${actions}
+      </div>`;
+    }
+
+    function eventTrader(p) {
+      if (!p) return "unknown";
+      return p.trader?.trim() || p.actions?.[0]?.trader?.trim() || "unknown";
+    }
+
+    function eventReason(e, p) {
+      if (p?.reason) return p.reason;
+      if (e.eventType === "alert_no_trade") {
+        return "No matching open trade in journal";
+      }
+      if (e.eventType === "alert_skip") return "Alert skipped";
+      if (e.eventType === "skip_not_followed") return "Trader not in FOLLOWED_TRADERS";
+      if (e.eventType === "skip_duplicate") return "Open trade already exists";
+      if (p?.actions?.[0]?.type) return `Action: ${p.actions[0].type}`;
+      return "";
+    }
+
+    function fmtTime(iso) {
+      if (!iso) return "—";
+      try {
+        return new Date(iso).toLocaleString("hu-HU", {
+          year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit", second: "2-digit",
+        });
+      } catch { return iso.slice(0, 19); }
+    }
+
+    function snowflakeToIso(id) {
+      try {
+        const ts = Number((BigInt(id) >> 22n) + 1420070400000n);
+        return new Date(ts).toISOString();
+      } catch { return null; }
+    }
+
+    function postedAtFromPayload(p) {
+      if (p?.postedAt) return p.postedAt;
+      if (p?.discordMsgId) return snowflakeToIso(p.discordMsgId);
+      if (p?.rawText) {
+        const m = p.rawText.match(/\/channels\/\d+\/\d+\/(\d{17,20})/);
+        if (m) return snowflakeToIso(m[1]);
+      }
+      return null;
+    }
+
+    function eventRow(e) {
+      const p = e.payload;
+      const trader = eventTrader(p);
+      const asset = p?.asset ?? "?";
+      const actionType = p?.actionType ?? p?.actions?.[0]?.type ?? "";
+      const reason = eventReason(e, p);
+      const snippet = p?.rawText ? p.rawText.replace(/\s+/g, " ").slice(0, 100) : "";
+      const posted = postedAtFromPayload(p);
+      const processed = e.createdAt;
+      return `<div class="event">
+        <div class="event-head">
+          <span class="event-type ${e.eventType}">${e.eventType}</span>
+          <span class="event-trader">@${trader}</span>
+          <span class="meta">${asset}${actionType ? " · " + actionType : ""}</span>
+        </div>
+        <div class="meta">Poszt: ${fmtTime(posted)} · Bot: ${fmtTime(processed)}${e.tradeId ? " · " + e.tradeId.slice(0, 8) : ""}</div>
+        ${reason ? `<div class="event-reason">${reason}</div>` : ""}
+        ${snippet ? `<div class="payload">${snippet}</div>` : ""}
+      </div>`;
+    }
+
+    async function act(id, action, body) {
+      const path = action === "close" ? `/api/trades/${id}/close`
+        : action === "cancel" ? `/api/trades/${id}/cancel`
+        : `/api/trades/${id}/move-be`;
+      await api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+      await refresh();
+    }
+    window.act = act;
+
+    async function refresh() {
+      const [summary, open, all, events] = await Promise.all([
+        api("/api/summary"),
+        api("/api/trades?status=open"),
+        api("/api/trades?status=all"),
+        api("/api/events?limit=120"),
+      ]);
+
+      document.getElementById("stats").innerHTML = `
+        <span>Nyitott: <strong>${summary.open}</strong></span>
+        <span>Pending limit: <strong>${summary.pending}</strong></span>
+        <span>Lezárva: <strong>${summary.closed}</strong></span>
+        <span>Események: <strong>${summary.events}</strong></span>
+        <span class="badge ${summary.dryRun ? "dry" : "live"}">${summary.dryRun ? "DRY_RUN" : "LIVE"}</span>`;
+
+      document.getElementById("open-trades").innerHTML = open.length
+        ? open.map(t => tradeCard(t, true)).join("")
+        : '<div class="empty">Nincs nyitott trade</div>';
+
+      document.getElementById("all-trades").innerHTML = all.length
+        ? all.map(t => tradeCard(t, false)).join("")
+        : '<div class="empty">Még nincs trade a journalban</div>';
+
+      document.getElementById("events").innerHTML = events.length
+        ? events.map(eventRow).join("")
+        : '<div class="empty">Nincs esemény</div>';
+
+      document.getElementById("updated").textContent = "Frissítve: " + new Date().toLocaleTimeString("hu-HU");
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

@@ -9,6 +9,7 @@ const links = [
   { href: "/mykols", label: "Saját KOL-ok" },
   { href: "/smartmoney", label: "Smart Money" },
   { href: "/copytrade", label: "Copy Trade" },
+  { href: "/degen", label: "Degen Bot" },
 ];
 
 export function Nav() {

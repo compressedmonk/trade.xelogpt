@@ -1,0 +1,41 @@
+{
+  "name": "degen-bot",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "type": "module",
+  "scripts": {
+    "discord:login": "tsx scripts/discord-login.ts",
+    "discord:extract-token": "tsx scripts/extract-token-from-profile.ts",
+    "spike": "tsx scripts/spike-listen.ts",
+    "test:history": "tsx scripts/test-history.ts",
+    "watch": "node scripts/require-node.mjs && tsx src/index.ts",
+    "start": "node scripts/require-node.mjs && tsx src/index.ts",
+    "telegram:test": "node scripts/require-node.mjs && tsx scripts/telegram-test.ts",
+    "wallet:new": "node scripts/require-node.mjs && tsx scripts/wallet-new.ts",
+    "wallet:balance": "node scripts/require-node.mjs && tsx scripts/wallet-balance.ts",
+    "test:buy": "node scripts/require-node.mjs && tsx scripts/test-buy.ts",
+    "sweep": "node scripts/require-node.mjs && tsx scripts/sweep.ts",
+    "status": "node scripts/require-node.mjs && tsx scripts/status.ts",
+    "test": "tsx tests/ca-filter.test.ts && tsx tests/zlib-inflate.test.ts",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
+    "better-sqlite3": "^11.8.1",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.4.7",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "playwright": "^1.50.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  }
+}

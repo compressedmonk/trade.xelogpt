@@ -101,6 +101,30 @@ export function MyKolsClient() {
   const [newHandle, setNewHandle] = useState("");
   const [newWallet, setNewWallet] = useState("");
   const [status, setStatus] = useState("");
+  const [botStatus, setBotStatus] = useState<{
+    enabled: boolean;
+    solanaConfigured: boolean;
+    tradingWallet: string | null;
+    buySol: number;
+    slippageBps: number;
+    pollIntervalMs: number;
+    pollRunning: boolean;
+    lastPollAt: string | null;
+    lastPollResult: { processed: number; bought: number; skipped: number; errors: number } | null;
+    recentLogs: Array<{
+      id: number;
+      tokenAddress: string;
+      tokenSymbol: string | null;
+      side: string;
+      amountSol: number;
+      status: string;
+      txSignature: string | null;
+      triggeredBy: string | null;
+      errorMessage: string | null;
+      createdAt: string;
+    }>;
+  } | null>(null);
+  const [botPollLoading, setBotPollLoading] = useState(false);
 
   const fetchProfiles = useCallback(async () => {
     const res = await fetch("/api/kols");
@@ -162,6 +186,28 @@ export function MyKolsClient() {
     }
   }, []);
 
+  const fetchBotStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/bot/status");
+      if (res.ok) setBotStatus(await res.json());
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  async function triggerBotPoll() {
+    setBotPollLoading(true);
+    try {
+      const res = await fetch("/api/bot/poll", { method: "POST" });
+      const data = await res.json();
+      if (data.error) setStatus(`Bot poll hiba: ${data.error}`);
+      else setStatus(`Bot poll: ${data.bought} buy, ${data.skipped} skip, ${data.errors} hiba`);
+      await fetchBotStatus();
+    } finally {
+      setBotPollLoading(false);
+    }
+  }
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const tasks: Promise<void>[] = [fetchProfiles(), fetchFeed(), fetchKolTokens()];
@@ -174,13 +220,16 @@ export function MyKolsClient() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchProfiles(), fetchFeed(), fetchKolTokens()]).finally(() => setLoading(false));
+    Promise.all([fetchProfiles(), fetchFeed(), fetchKolTokens(), fetchBotStatus()]).finally(() =>
+      setLoading(false),
+    );
     const interval = setInterval(() => {
       fetchFeed();
       fetchKolTokens();
+      fetchBotStatus();
     }, 60000);
     return () => clearInterval(interval);
-  }, [fetchProfiles, fetchFeed, fetchKolTokens]);
+  }, [fetchProfiles, fetchFeed, fetchKolTokens, fetchBotStatus]);
 
   useEffect(() => {
     if (!importOpen) return;
@@ -336,6 +385,113 @@ export function MyKolsClient() {
           Az @ jel opcionális — <span className="text-gray-400">ansem</span> és <span className="text-gray-400">@ansem</span> egyaránt működik.
         </p>
       </div>
+
+      {/* KOL Auto-Buy Bot */}
+      {botStatus && (
+        <div className="glass rounded-xl p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold text-cyan-400 uppercase tracking-wider">
+                KOL Auto-Buy Bot
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Jupiter on-chain buy, ha egy enabled KOL wallet vásárol.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${
+                  botStatus.enabled && botStatus.solanaConfigured
+                    ? "bg-brand-green/10 text-brand-green"
+                    : "bg-white/[0.06] text-gray-500"
+                }`}
+              >
+                {botStatus.enabled
+                  ? botStatus.solanaConfigured
+                    ? "AKTÍV"
+                    : "HIÁNYZÓ RPC/KULCS"
+                  : "KI"}
+              </span>
+              <button
+                type="button"
+                onClick={triggerBotPoll}
+                disabled={botPollLoading}
+                className="px-3 py-1.5 text-xs rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 disabled:opacity-50"
+              >
+                {botPollLoading ? "Poll..." : "Poll most"}
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div>
+              <span className="text-gray-500 block">Trading wallet</span>
+              <span className="text-gray-300 font-mono truncate block">
+                {botStatus.tradingWallet
+                  ? `${botStatus.tradingWallet.slice(0, 6)}...${botStatus.tradingWallet.slice(-4)}`
+                  : "—"}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500 block">Buy méret</span>
+              <span className="text-gray-300">{botStatus.buySol} SOL</span>
+            </div>
+            <div>
+              <span className="text-gray-500 block">Slippage</span>
+              <span className="text-gray-300">{botStatus.slippageBps} bps</span>
+            </div>
+            <div>
+              <span className="text-gray-500 block">Utolsó poll</span>
+              <span className="text-gray-300">
+                {botStatus.lastPollAt
+                  ? new Date(botStatus.lastPollAt).toLocaleTimeString()
+                  : "—"}
+                {botStatus.lastPollResult && (
+                  <span className="text-gray-500 ml-1">
+                    ({botStatus.lastPollResult.bought}b/{botStatus.lastPollResult.skipped}s)
+                  </span>
+                )}
+              </span>
+            </div>
+          </div>
+          {botStatus.recentLogs.length > 0 && (
+            <div className="border-t border-white/[0.06] pt-3 space-y-1">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Utolsó auto-buy-k</p>
+              {botStatus.recentLogs.slice(0, 5).map((log) => (
+                <div key={log.id} className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-brand-green font-medium">{log.tokenSymbol ?? "?"}</span>
+                  <span className="text-gray-500">{log.amountSol} SOL</span>
+                  <span
+                    className={
+                      log.status === "confirmed"
+                        ? "text-brand-green"
+                        : log.status === "failed"
+                          ? "text-brand-red"
+                          : "text-gray-400"
+                    }
+                  >
+                    {log.status}
+                  </span>
+                  {log.txSignature && (
+                    <a
+                      href={`https://solscan.io/tx/${log.txSignature}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-400 hover:text-cyan-300 font-mono"
+                    >
+                      TX
+                    </a>
+                  )}
+                  {log.errorMessage && (
+                    <span className="text-brand-red truncate max-w-[200px]" title={log.errorMessage}>
+                      {log.errorMessage.slice(0, 40)}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add KOL */}
       <div className="glass rounded-xl p-4 space-y-3">

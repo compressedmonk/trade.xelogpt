@@ -18,6 +18,7 @@ interface CopyConfig {
 interface TradeLogEntry {
   id: number;
   orderId: string | null;
+  txSignature: string | null;
   chain: string;
   tokenAddress: string;
   tokenSymbol: string | null;
@@ -28,6 +29,7 @@ interface TradeLogEntry {
   status: string;
   source: string | null;
   triggeredBy: string | null;
+  errorMessage: string | null;
   createdAt: string;
 }
 
@@ -257,12 +259,13 @@ export function CopyTradeClient() {
                 <th className="text-right p-3">Amount</th>
                 <th className="text-left p-3">Status</th>
                 <th className="text-left p-3">Source</th>
+                <th className="text-left p-3">TX</th>
               </tr>
             </thead>
             <tbody>
               {logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center text-gray-600 py-8">
+                  <td colSpan={7} className="text-center text-gray-600 py-8">
                     No trades yet
                   </td>
                 </tr>
@@ -292,6 +295,22 @@ export function CopyTradeClient() {
                       <StatusBadge status={l.status} />
                     </td>
                     <td className="p-3 text-gray-500 text-xs">{l.source ?? "—"}</td>
+                    <td className="p-3 text-xs">
+                      {l.txSignature ? (
+                        <a
+                          href={`https://solscan.io/tx/${l.txSignature}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-cyan-400 hover:text-cyan-300 font-mono"
+                        >
+                          {l.txSignature.slice(0, 6)}...
+                        </a>
+                      ) : l.orderId ? (
+                        <span className="text-gray-500 font-mono">{l.orderId.slice(0, 8)}...</span>
+                      ) : (
+                        <span className="text-gray-600">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}

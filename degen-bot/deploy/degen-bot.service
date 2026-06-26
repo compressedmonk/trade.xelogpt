@@ -1,0 +1,22 @@
+[Unit]
+Description=Degen Bot (Solana CA sniper)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust User, WorkingDirectory, and ExecStart via deploy/install.sh
+User=degen
+WorkingDirectory=/opt/degen-bot
+EnvironmentFile=/opt/degen-bot/.env
+ExecStart=/usr/bin/node /opt/degen-bot/node_modules/.bin/tsx /opt/degen-bot/src/index.ts
+Restart=always
+RestartSec=5
+# Crash-loop guard: stop trying if it fails 5 times within 60s.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+# Ensure data dir is writable
+ReadWritePaths=/opt/degen-bot/data
+
+[Install]
+WantedBy=multi-user.target

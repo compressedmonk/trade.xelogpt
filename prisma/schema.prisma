@@ -47,6 +47,7 @@ model CopyTradeConfig {
 model TradeLog {
   id            Int      @id @default(autoincrement())
   orderId       String?
+  txSignature   String?
   chain         String   @default("sol")
   tokenAddress  String
   tokenSymbol   String?
@@ -57,7 +58,16 @@ model TradeLog {
   status        String   @default("pending")
   source        String?
   triggeredBy   String?
+  errorMessage  String?
   createdAt     DateTime @default(now())
+}
+
+model ProcessedKolTrade {
+  id            String   @id
+  walletAddress String
+  tokenAddress  String
+  side          String   @default("buy")
+  processedAt   DateTime @default(now())
 }
 
 model KolProfile {

@@ -1,0 +1,6 @@
+node_modules/
+dist/
+data/discord-profile/
+.env
+spike-output/
+data/
