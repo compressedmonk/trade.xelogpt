@@ -159,7 +159,6 @@ export async function probeOpenAI(): Promise<ServiceProbe & { model: string | nu
     }
 
     let balance: ServiceProbe["balance"];
-    let balanceNote: string | null = null;
 
     if (adminKey) {
       try {
@@ -173,46 +172,22 @@ export async function probeOpenAI(): Promise<ServiceProbe & { model: string | nu
             total_used?: number;
             total_granted?: number;
           };
-          balance = {
-            available: credits.total_available ?? null,
-            used: credits.total_used ?? null,
-            granted: credits.total_granted ?? null,
-            currency: "USD",
-          };
-          balanceNote = null;
-        } else {
-          const startTime = Math.floor(Date.now() / 1000) - 86400 * 30;
-          const costsRes = await fetch(
-            `https://api.openai.com/v1/organization/costs?start_time=${startTime}&limit=31`,
-            { headers: { Authorization: `Bearer ${adminKey}` }, cache: "no-store" },
-          );
-          if (costsRes.ok) {
-            const costs = (await costsRes.json()) as {
-              data?: Array<{ results?: Array<{ amount?: { value?: number } }> }>;
-            };
-            let totalCents = 0;
-            for (const bucket of costs.data ?? []) {
-              for (const row of bucket.results ?? []) {
-                totalCents += row.amount?.value ?? 0;
-              }
-            }
-            const totalUsd = totalCents / 100;
+          if (
+            credits.total_available != null ||
+            credits.total_used != null ||
+            credits.total_granted != null
+          ) {
             balance = {
-              available: null,
-              used: totalUsd,
-              granted: null,
+              available: credits.total_available ?? null,
+              used: credits.total_used ?? null,
+              granted: credits.total_granted ?? null,
               currency: "USD",
             };
-            balanceNote = `30 napi költség: $${totalUsd.toFixed(2)} (egyenleg csak dashboardon)`;
-          } else {
-            balanceNote = "Admin kulcs nem adott billing infót";
           }
         }
       } catch {
-        balanceNote = "Billing lekérés sikertelen";
+        // credits unavailable — API health still OK
       }
-    } else {
-      balanceNote = "Egyenleghez OPENAI_ADMIN_KEY kell";
     }
 
     let status: HealthLevel = "ok";
@@ -223,7 +198,7 @@ export async function probeOpenAI(): Promise<ServiceProbe & { model: string | nu
       configured: true,
       status,
       latencyMs,
-      message: balanceNote ?? "API elérhető",
+      message: "API elérhető",
       balance,
       model,
     };

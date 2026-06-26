@@ -194,16 +194,14 @@ export function HealthClient() {
             {data.openai.model && (
               <p className="text-gray-500">Sentiment modell: <span className="text-gray-300">{data.openai.model}</span></p>
             )}
-            {data.openai.balance && (
+            {data.openai.balance?.available != null && (
               <div className="grid grid-cols-3 gap-2 pt-1">
                 <div>
                   <span className="text-gray-500 block">Elérhető</span>
                   <span className="text-brand-green font-medium">{fmtUsd(data.openai.balance.available)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 block">
-                    {data.openai.balance.available == null ? "30 napi költség" : "Felhasznált"}
-                  </span>
+                  <span className="text-gray-500 block">Felhasznált</span>
                   <span className="text-gray-300">{fmtUsd(data.openai.balance.used)}</span>
                 </div>
                 <div>
