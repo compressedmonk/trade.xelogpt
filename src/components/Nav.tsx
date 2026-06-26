@@ -11,6 +11,7 @@ const links = [
   { href: "/degen", label: "Degen Bot" },
   { href: "/trending", label: "Trending" },
   { href: "/trenches", label: "Trenches" },
+  { href: "/health", label: "Státusz" },
 ];
 
 export function Nav() {
