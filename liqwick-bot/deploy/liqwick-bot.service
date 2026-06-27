@@ -1,0 +1,20 @@
+[Unit]
+Description=LiqWick Bot — Binance Futures regime liq wick
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=liqwick
+WorkingDirectory=/opt/liqwick-bot
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/liqwick-bot/.env
+ExecStart=/usr/bin/node /opt/liqwick-bot/node_modules/.bin/tsx /opt/liqwick-bot/src/index.ts
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=60
+StartLimitBurst=5
+ReadWritePaths=/opt/liqwick-bot/data
+
+[Install]
+WantedBy=multi-user.target

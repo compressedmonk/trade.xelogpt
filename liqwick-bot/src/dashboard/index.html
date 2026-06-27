@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LiqWick Bot</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-monospace, monospace; background: #0a0e14; color: #c9d1d9; }
+    body { margin: 0; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .site-logo {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #22d3ee;
+      letter-spacing: -0.025em;
+      text-decoration: none;
+      text-shadow: 0 0 20px rgba(6, 182, 212, 0.45);
+    }
+    .site-logo:hover { color: #67e8f9; }
+    .page { padding: 1.5rem; }
+    h1 { color: #06b6d4; margin: 0 0 0.25rem; font-size: 1.4rem; }
+    .sub { color: #6b7280; margin-bottom: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 1rem; }
+    .label { color: #6b7280; font-size: 0.75rem; text-transform: uppercase; }
+    .value { font-size: 1.1rem; margin-top: 0.25rem; }
+    .bull { color: #34d399; } .bear { color: #f87171; } .neutral { color: #fbbf24; }
+    .sweeping { color: #06b6d4; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #1f2937; }
+    th { color: #6b7280; }
+    section { margin-bottom: 2rem; }
+    h2 { font-size: 1rem; color: #9ca3af; margin: 0 0 0.75rem; font-weight: 600; }
+    .tweak-tasks { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 1rem 1.25rem; }
+    .tweak-tasks .hint { color: #6b7280; font-size: 0.8rem; margin: 0 0 1rem; }
+    .tweak-list { list-style: none; margin: 0; padding: 0; }
+    .tweak-list li { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.6rem 0; border-bottom: 1px solid #1f2937; font-size: 0.85rem; line-height: 1.45; }
+    .tweak-list li:last-child { border-bottom: none; }
+    .tweak-list input[type="checkbox"] { margin-top: 0.2rem; accent-color: #06b6d4; flex-shrink: 0; }
+    .tweak-list label { cursor: pointer; flex: 1; }
+    .tweak-list li.done label { color: #6b7280; text-decoration: line-through; }
+    .tweak-list code { color: #06b6d4; font-size: 0.8rem; }
+    section, table, thead, tr, .card { overflow: visible; }
+    .tip {
+      position: relative;
+      cursor: help;
+      text-decoration: underline dotted #4b5563;
+      text-underline-offset: 2px;
+    }
+    .tip::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 280px;
+      padding: 0.5rem 0.65rem;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #e5e7eb;
+      font-size: 0.75rem;
+      font-weight: 400;
+      line-height: 1.4;
+      text-transform: none;
+      letter-spacing: normal;
+      white-space: normal;
+      text-align: left;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.15s, visibility 0.15s;
+      z-index: 200;
+    }
+    .tip:hover::after, .tip:focus-visible::after {
+      opacity: 1;
+      visibility: visible;
+    }
+    .tip-tip-left::after {
+      left: auto;
+      right: 0;
+      transform: none;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+    }
+    .filters label { color: #9ca3af; display: flex; align-items: center; gap: 0.35rem; }
+    .filters select, .filters input {
+      background: #111827;
+      border: 1px solid #374151;
+      color: #e5e7eb;
+      border-radius: 4px;
+      padding: 0.25rem 0.4rem;
+      font: inherit;
+    }
+    .filters button {
+      background: #0e7490;
+      border: none;
+      color: #fff;
+      border-radius: 4px;
+      padding: 0.35rem 0.65rem;
+      font: inherit;
+      cursor: pointer;
+    }
+    .filters button:hover { background: #0891b2; }
+    .filter-hint { color: #6b7280; font-size: 0.75rem; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="site-logo" href="https://trade.xelogpt.com/mykols">Litt-Analyzer</a>
+  </header>
+  <main class="page">
+  <h1>LiqWick Bot v2</h1>
+  <p class="sub">Forward DRY_RUN journal — mainnet data, full optimization logging</p>
+  <div class="grid" id="stats"></div>
+  <div class="grid" id="optStats"></div>
+
+  <section>
+    <h2>Tweak feladatok — ~2 hét DRY_RUN után</h2>
+    <div class="tweak-tasks">
+      <p class="hint">Először journal + statok fent. Aztán pipáld, amit megcsináltál — ebben a böngészőben marad.</p>
+      <ul class="tweak-list" id="tweakTasks">
+        <li data-id="near-miss">
+          <input type="checkbox" id="task-near-miss" />
+          <label for="task-near-miss">
+            Near-miss — sok <code>blocked_low_score</code>, peak 55–59? <code>ENTER_THRESHOLD</code> lejjebb, pl. 55.
+          </label>
+        </li>
+        <li data-id="timeout-reversal">
+          <input type="checkbox" id="task-timeout-reversal" />
+          <label for="task-timeout-reversal">
+            Timeout / reversal — sok <code>timeout_no_reversal</code> a block reasonben? <code>REVERSAL_ATR_K</code> vagy <code>SWEEP_TIMEOUT_MS</code>.
+          </label>
+        </li>
+        <li data-id="continuation">
+          <input type="checkbox" id="task-continuation" />
+          <label for="task-continuation">
+            Continuation — gyakori <code>aborted_continuation</code>? <code>SWEEP_ATR_K</code>, max depth / sweep depth limit.
+          </label>
+        </li>
+        <li data-id="symbol-regime">
+          <input type="checkbox" id="task-symbol-regime" />
+          <label for="task-symbol-regime">
+            Triggered vs blocked — symbolonként, bull/bear szerint. Gyenge coinok ki, filter szigorítás ha kell.
+          </label>
+        </li>
+        <li data-id="peak-distribution">
+          <input type="checkbox" id="task-peak-distribution" />
+          <label for="task-peak-distribution">
+            Peak score — hol akad el sweep közben? Ha egy komponens sosem ad pontot, confluence súlyokat húzni.
+          </label>
+        </li>
+        <li data-id="export-review">
+          <input type="checkbox" id="task-export-review" />
+          <label for="task-export-review">
+            Végleges — <code>/api/sweep-journal?limit=500</code> + <code>/api/optimization</code>, utána <code>.env</code> VPS-en, restart.
+          </label>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Live monitors</h2>
+    <table><thead><tr>
+      <th class="tip" data-tip="Figyelt Binance Futures páros (pl. BTCUSDT)." title="Figyelt Binance Futures páros (pl. BTCUSDT).">Symbol</th>
+      <th class="tip" data-tip="Sweep állapot: idle = várakozás, sweeping = szint alá/fölé csapás folyamatban, cooldown = utolsó sweep után szünet." title="Sweep állapot: idle = várakozás, sweeping = szint alá/fölé csapás folyamatban, cooldown = utolsó sweep után szünet.">Phase</th>
+      <th class="tip" data-tip="Várható belépési irány: long = long likvid csapás után visszapattanás felfelé, short = fordítva." title="Várható belépési irány: long = long likvid csapás után visszapattanás felfelé, short = fordítva.">Side</th>
+      <th class="tip" data-tip="Confluence pontszám 0–100. Belépéshez általában el kell érni a thresholdot és kell reversal megerősítés." title="Confluence pontszám 0–100. Belépéshez általában el kell érni a thresholdot és kell reversal megerősítés.">Score</th>
+      <th class="tip" data-tip="Pontszám bontás: L = likvid burst, S = sweep mélység × szint súly, V = sebesség, G = wick geometria, vol = volume spike, d = taker delta, p = funding + basis positioning." title="Pontszám bontás: L = likvid burst, S = sweep mélység × szint súly, V = sebesség, G = wick geometria, vol = volume spike, d = taker delta, p = funding + basis positioning.">Breakdown</th>
+      <th class="tip" data-tip="Aktuális 8 órás funding rate (%). Long flush-nál extrém pozitív funding aligned; shortnál negatív." title="Aktuális 8 órás funding rate (%). Long flush-nál extrém pozitív funding aligned; shortnál negatív.">Funding</th>
+      <th class="tip" data-tip="Mark − index premium bps-ben. Pozitív = a perp drágább az indexnél; a positioning score része." title="Mark − index premium bps-ben. Pozitív = a perp drágább az indexnél; a positioning score része.">Basis</th>
+      <th class="tip" data-tip="Long likvid burst arány: SELL force order robbanás vs baseline. Long jelhez magas érték jó." title="Long likvid burst arány: SELL force order robbanás vs baseline. Long jelhez magas érték jó.">Liq L</th>
+      <th class="tip" data-tip="Short likvid burst arány: BUY force order robbanás vs baseline. Short jelhez magas érték jó." title="Short likvid burst arány: BUY force order robbanás vs baseline. Short jelhez magas érték jó.">Liq S</th>
+      <th class="tip" data-tip="Sweep alatt elért legalacsonyabb ár (long) vagy legmagasabb ár (short)." title="Sweep alatt elért legalacsonyabb ár (long) vagy legmagasabb ár (short).">Extremum</th>
+      <th class="tip tip-tip-left" data-tip="Az éppen átszúrt szint ára (support, resistance, fractal stb.)." title="Az éppen átszúrt szint ára (support, resistance, fractal stb.).">Level</th>
+    </tr></thead><tbody id="monitors"></tbody></table>
+  </section>
+
+  <section>
+    <h2>Sweep journal (optimization)</h2>
+    <div class="filters">
+      <label>Period
+        <select id="filterDays">
+          <option value="">All time</option>
+          <option value="7">Last 7 days</option>
+          <option value="14">Last 14 days</option>
+          <option value="30">Last 30 days</option>
+        </select>
+      </label>
+      <label>Outcome
+        <select id="filterOutcome">
+          <option value="">All</option>
+          <option value="triggered">triggered</option>
+          <option value="aborted_continuation">aborted_continuation</option>
+          <option value="aborted_timeout">aborted_timeout</option>
+          <option value="blocked_no_reversal">blocked_no_reversal</option>
+          <option value="blocked_low_score">blocked_low_score</option>
+          <option value="aborted_sl">aborted_sl</option>
+          <option value="regime_reset">regime_reset</option>
+        </select>
+      </label>
+      <label>Symbol
+        <select id="filterSymbol">
+          <option value="">All</option>
+        </select>
+      </label>
+      <label>Limit
+        <select id="filterLimit">
+          <option value="100">100</option>
+          <option value="200" selected>200</option>
+          <option value="500">500</option>
+        </select>
+      </label>
+      <button type="button" id="filterApply">Apply</button>
+    </div>
+    <p class="filter-hint" id="filterHint">Stats and journal rows use the selected period.</p>
+    <table><thead><tr>
+      <th class="tip" data-tip="A sweep naplóbejegyzés időpontja." title="A sweep naplóbejegyzés időpontja.">Time</th>
+      <th class="tip" data-tip="Futures páros." title="Futures páros.">Symbol</th>
+      <th class="tip" data-tip="Long vagy short irány." title="Long vagy short irány.">Side</th>
+      <th class="tip" data-tip="Sweep végeredménye: triggered, blocked_low_score, blocked_no_reversal, aborted_timeout, aborted_continuation stb." title="Sweep végeredménye: triggered, blocked_low_score, blocked_no_reversal, aborted_timeout, aborted_continuation stb.">Outcome</th>
+      <th class="tip" data-tip="Sweep alatt elért legmagasabb confluence pont." title="Sweep alatt elért legmagasabb confluence pont.">Peak</th>
+      <th class="tip" data-tip="Sweep lezárásakor aktuális confluence pont." title="Sweep lezárásakor aktuális confluence pont.">Final</th>
+      <th class="tip" data-tip="Konkrét blokkolási ok, pl. timeout_no_reversal vagy peak_58_lt_60." title="Konkrét blokkolási ok, pl. timeout_no_reversal vagy peak_58_lt_60.">Block</th>
+      <th class="tip" data-tip="Lezáráskori csapás mélység ATR-ben — abort pillanatában mért érték." title="Lezáráskori csapás mélység ATR-ben — abort pillanatában mért érték.">Depth</th>
+      <th class="tip" data-tip="Maximális csapás mélység ATR-ben sweep alatt — lehet alacsonyabb mint Depth continuation abortnál." title="Maximális csapás mélység ATR-ben sweep alatt — lehet alacsonyabb mint Depth continuation abortnál.">Max depth</th>
+      <th class="tip" data-tip="Triggerelt belépő ár, ha volt jel." title="Triggerelt belépő ár, ha volt jel.">Entry</th>
+      <th class="tip" data-tip="Stop loss ár, ha volt triggerelt jel." title="Stop loss ár, ha volt triggerelt jel.">SL</th>
+      <th class="tip" data-tip="Sweep idején rögzített funding rate." title="Sweep idején rögzített funding rate.">Funding</th>
+      <th class="tip tip-tip-left" data-tip="Likvidáció burst arány sweep idején (aktuális vs baseline)." title="Likvidáció burst arány sweep idején (aktuális vs baseline).">Liq</th>
+    </tr></thead><tbody id="journal"></tbody></table>
+  </section>
+
+  <section>
+    <h2>Signals (triggered)</h2>
+    <table><thead><tr>
+      <th class="tip" data-tip="A jel létrejöttének időpontja." title="A jel létrejöttének időpontja.">Time</th>
+      <th class="tip" data-tip="Futures páros." title="Futures páros.">Symbol</th>
+      <th class="tip" data-tip="Long vagy short belépési irány." title="Long vagy short belépési irány.">Side</th>
+      <th class="tip" data-tip="Triggereléskori confluence pontszám (0–100)." title="Triggereléskori confluence pontszám (0–100).">Score</th>
+      <th class="tip" data-tip="Pontszám bontás: L = likvid, S = sweep, V = sebesség, G = geometria, vol = volume, d = delta, p = positioning." title="Pontszám bontás: L = likvid, S = sweep, V = sebesség, G = geometria, vol = volume, d = delta, p = positioning.">Breakdown</th>
+      <th class="tip" data-tip="Javasolt belépő ár a jelben." title="Javasolt belépő ár a jelben.">Entry</th>
+      <th class="tip tip-tip-left" data-tip="Miért triggerelt a jel (pl. reversal megerősítve + threshold elérve)." title="Miért triggerelt a jel (pl. reversal megerősítve + threshold elérve).">Reason</th>
+    </tr></thead><tbody id="signals"></tbody></table>
+  </section>
+
+  <section>
+    <h2>Events (regime + sweep + errors)</h2>
+    <table><thead><tr>
+      <th class="tip" data-tip="Esemény időpontja." title="Esemény időpontja.">Time</th>
+      <th class="tip" data-tip="Esemény típusa: regime váltás, sweep abort, journal, error, SL move stb." title="Esemény típusa: regime váltás, sweep abort, journal, error, SL move stb.">Type</th>
+      <th class="tip tip-tip-left" data-tip="JSON részletek (csonkítva) — sweep meta, hibák, regime adatok." title="JSON részletek (csonkítva) — sweep meta, hibák, regime adatok.">Payload</th>
+    </tr></thead><tbody id="events"></tbody></table>
+  </section>
+
+  <script>
+    function lbl(text, tipText) {
+      const e = tipText.replace(/"/g, '&quot;');
+      return `<div class="label tip" data-tip="${e}" title="${e}">${text}</div>`;
+    }
+    function fmtFunding(rate) {
+      if (rate == null) return '—';
+      return (rate * 100).toFixed(4) + '%';
+    }
+    function fmtBasis(bps) {
+      if (bps == null) return '—';
+      return bps.toFixed(1) + ' bps';
+    }
+    function fmtBreakdown(raw) {
+      if (!raw) return '—';
+      try {
+        const b = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        return `L${b.liquidation ?? 0} S${b.sweep ?? 0} V${b.velocity ?? 0} G${b.geometry ?? 0} vol${b.volume ?? 0} d${b.delta ?? 0} p${b.positioning ?? 0}`;
+      } catch { return '—'; }
+    }
+    function journalQueryParams() {
+      const params = new URLSearchParams();
+      const days = document.getElementById('filterDays').value;
+      const outcome = document.getElementById('filterOutcome').value;
+      const symbol = document.getElementById('filterSymbol').value;
+      const limit = document.getElementById('filterLimit').value;
+      if (days) {
+        const since = new Date(Date.now() - Number(days) * 86400000).toISOString().slice(0, 19);
+        params.set('since', since);
+      }
+      if (outcome) params.set('outcome', outcome);
+      if (symbol) params.set('symbol', symbol);
+      params.set('limit', limit || '200');
+      return params;
+    }
+    function populateSymbolFilter(symbols) {
+      const sel = document.getElementById('filterSymbol');
+      const current = sel.value;
+      const opts = ['<option value="">All</option>'];
+      for (const s of symbols.sort()) {
+        opts.push(`<option value="${s}">${s}</option>`);
+      }
+      sel.innerHTML = opts.join('');
+      if (current && symbols.includes(current)) sel.value = current;
+    }
+    async function load() {
+      const q = journalQueryParams();
+      const optQ = new URLSearchParams(q);
+      optQ.delete('limit');
+      const [status, signals, events, journal, opt] = await Promise.all([
+        fetch('api/status').then(r => r.json()),
+        fetch('api/signals').then(r => r.json()),
+        fetch('api/events').then(r => r.json()),
+        fetch('api/sweep-journal?' + q.toString()).then(r => r.json()),
+        fetch('api/optimization?' + optQ.toString()).then(r => r.json()),
+      ]);
+      const symbols = [...new Set((journal || []).map(j => j.symbol).filter(Boolean))];
+      if (status.symbols) status.symbols.forEach(s => symbols.push(s));
+      populateSymbolFilter([...new Set(symbols)]);
+      const rc = status.regime || 'neutral';
+      const sh = status.streamHealth || {};
+      const src = sh.dataSource || '—';
+      const ageSec = sh.wsLastMessageAgeMs != null ? Math.round(sh.wsLastMessageAgeMs / 1000) : null;
+      const days = document.getElementById('filterDays').value;
+      const periodLabel = days ? `last ${days}d` : 'all time';
+      document.getElementById('filterHint').textContent = `Stats and journal: ${periodLabel}, showing ${journal.length} rows.`;
+      document.getElementById('stats').innerHTML = `
+        <div class="card">${lbl('Regime', 'BTC 4H EMA200 gate: bull = csak long sweep, bear = csak short, neutral = nincs kereskedés')}<div class="value ${rc}">${rc.toUpperCase()}</div></div>
+        <div class="card">${lbl('Dry run', 'Szimulált mód — jeleket és journalt ír, de nem küld valódi ordert.')}<div class="value">${status.dryRun ? 'YES' : 'NO'}</div></div>
+        <div class="card">${lbl('Testnet', 'Binance testnet vs mainnet adatforrás és kereskedési környezet.')}<div class="value">${status.testnet ? 'YES' : 'NO (mainnet)'}</div></div>
+        <div class="card">${lbl('Data source', 'ws = élő websocket stream; más érték = REST fallback poller.')}<div class="value ${src === 'ws' ? 'bull' : 'neutral'}">${src.toUpperCase()}</div></div>
+        <div class="card">${lbl('WS msg age', 'Utolsó websocket üzenet óta eltelt másodperc — magas érték = adatkésés.')}<div class="value" style="font-size:0.85rem">${ageSec != null ? ageSec + 's' : '—'}</div></div>
+        <div class="card">${lbl('Open', 'Jelenleg nyitott pozíciók száma.')}<div class="value">${status.openPositions ?? 0}</div></div>
+        <div class="card">${lbl('Signals', 'Összes triggerelt jel száma (optimization stat).')}<div class="value">${opt.triggered ?? 0}</div></div>
+      `;
+      document.getElementById('optStats').innerHTML = `
+        <div class="card">${lbl('Total sweeps', 'Összes naplózott sweep esemény a journalban.')}<div class="value">${opt.totalSweeps ?? 0}</div></div>
+        <div class="card">${lbl('Near misses', 'Peak score 45–59 között, de nem triggerelt — közel volt a belépéshez.')}<div class="value">${opt.nearMiss ?? 0}</div></div>
+        <div class="card">${lbl('Aborts', 'Timeout, continuation vagy SL túl messze miatt megszakított sweep-ek.')}<div class="value">${opt.aborts ?? 0}</div></div>
+        <div class="card">${lbl('Avg peak score', 'Sweep-ek átlagos csúcspont confluence pontja.')}<div class="value">${opt.avgPeakScore ?? 0}</div></div>
+        <div class="card">${lbl('Threshold', 'ENTER_THRESHOLD — minimum confluence pont belépéshez (alapértelmezés: 60).')}<div class="value">${status.enterThreshold ?? 60}</div></div>
+        <div class="card">${lbl('Last scan', 'Utolsó symbol scan időpontja.')}<div class="value" style="font-size:0.75rem">${status.lastScanAt ? status.lastScanAt.replace('T',' ').slice(0,19) : '—'}</div></div>
+      `;
+      document.getElementById('monitors').innerHTML = (status.monitors || []).map(m => `
+        <tr><td>${m.symbol}</td><td class="${m.phase === 'sweeping' ? 'sweeping' : ''}">${m.phase}</td>
+        <td>${m.side || '—'}</td><td>${m.score ?? '—'}</td><td>${fmtBreakdown(m.scoreBreakdown)}</td>
+        <td>${fmtFunding(m.fundingRate)}</td><td>${fmtBasis(m.basisBps)}</td>
+        <td>${m.liqBurstLong ?? '—'}</td><td>${m.liqBurstShort ?? '—'}</td>
+        <td>${m.extremum ?? '—'}</td><td>${m.sweptLevel ?? '—'}</td></tr>
+      `).join('') || '<tr><td colspan="11">No data</td></tr>';
+      document.getElementById('journal').innerHTML = journal.map(j => `
+        <tr><td>${j.created_at}</td><td>${j.symbol}</td><td>${j.side}</td><td>${j.outcome}</td>
+        <td>${j.peak_score}</td><td>${j.final_score}</td><td>${j.block_reason || '—'}</td>
+        <td>${j.depth_atr?.toFixed?.(2) ?? j.depth_atr ?? '—'}</td>
+        <td>${j.max_depth_atr?.toFixed?.(2) ?? j.max_depth_atr ?? '—'}</td>
+        <td>${j.entry_price ?? '—'}</td><td>${j.stop_loss ?? '—'}</td>
+        <td>${j.funding_rate != null ? (j.funding_rate * 100).toFixed(4) + '%' : '—'}</td>
+        <td>${j.liq_burst_ratio?.toFixed?.(1) ?? '—'}</td></tr>
+      `).join('') || '<tr><td colspan="13">No sweeps logged yet</td></tr>';
+      document.getElementById('signals').innerHTML = signals.slice(0, 15).map(s => `
+        <tr><td>${s.created_at}</td><td>${s.symbol}</td><td>${s.side}</td>
+        <td>${s.confluence_score ?? '—'}</td><td>${fmtBreakdown(s.score_breakdown)}</td>
+        <td>${s.entry_price}</td><td>${s.reason}</td></tr>
+      `).join('') || '<tr><td colspan="7">No signals</td></tr>';
+      const filtered = events.filter(e =>
+        e.eventType.includes('abort') || e.eventType.includes('journal') || e.eventType.includes('regime') || e.eventType.includes('error') || e.eventType.includes('sl_moved')
+      ).slice(0, 20);
+      document.getElementById('events').innerHTML = filtered.map(e => `
+        <tr><td>${e.createdAt}</td><td>${e.eventType}</td><td>${JSON.stringify(e.payload).slice(0,120)}</td></tr>
+      `).join('') || '<tr><td colspan="3">No events</td></tr>';
+    }
+    const TWEAK_STORAGE_KEY = 'liqwick-tweak-tasks';
+    function initTweakTasks() {
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem(TWEAK_STORAGE_KEY) || '{}'); } catch { /* ignore */ }
+      document.querySelectorAll('#tweakTasks li[data-id]').forEach(li => {
+        const id = li.dataset.id;
+        const cb = li.querySelector('input[type="checkbox"]');
+        cb.checked = !!saved[id];
+        li.classList.toggle('done', cb.checked);
+        cb.addEventListener('change', () => {
+          saved[id] = cb.checked;
+          localStorage.setItem(TWEAK_STORAGE_KEY, JSON.stringify(saved));
+          li.classList.toggle('done', cb.checked);
+        });
+      });
+    }
+    initTweakTasks();
+    document.getElementById('filterApply').addEventListener('click', load);
+    load(); setInterval(load, 3000);
+  </script>
+  </main>
+</body>
+</html>

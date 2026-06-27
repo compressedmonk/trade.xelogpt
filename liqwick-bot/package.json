@@ -1,0 +1,31 @@
+{
+  "name": "liqwick-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Regime-gated intrabar liquidation wick bot for Binance Futures",
+  "engines": {
+    "node": ">=18"
+  },
+  "type": "module",
+  "scripts": {
+    "setup": "npm install && node -e \"const fs=require('fs'); if(!fs.existsSync('.env')){fs.copyFileSync('.env.example','.env'); console.log('Created .env');}\"",
+    "start": "node scripts/require-node.mjs && node node_modules/tsx/dist/cli.mjs src/index.ts",
+    "dashboard": "node scripts/require-node.mjs && node node_modules/tsx/dist/cli.mjs src/dashboard/server.ts",
+    "analyze": "node scripts/require-node.mjs && node scripts/analyze-journal.mjs",
+    "backup-db": "bash scripts/backup-db.sh",
+    "test": "node scripts/require-node.mjs && node node_modules/tsx/dist/cli.mjs tests/indicators.test.ts && node node_modules/tsx/dist/cli.mjs tests/levels.test.ts && node node_modules/tsx/dist/cli.mjs tests/funding-tracker.test.ts && node node_modules/tsx/dist/cli.mjs tests/confluence.test.ts && node node_modules/tsx/dist/cli.mjs tests/velocity.test.ts && node node_modules/tsx/dist/cli.mjs tests/sweep-journal.test.ts && node node_modules/tsx/dist/cli.mjs tests/state-machine.test.ts && node node_modules/tsx/dist/cli.mjs tests/regime.test.ts",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^16.4.7",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  }
+}
