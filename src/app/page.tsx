@@ -6,7 +6,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 export default async function LandingPage() {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (token && (await verifySessionToken(token))) {
-    redirect("/trending");
+    redirect("/mykols");
   }
 
   return <LandingExperience />;

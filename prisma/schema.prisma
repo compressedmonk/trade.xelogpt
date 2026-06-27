@@ -94,6 +94,37 @@ model KolWallet {
   @@unique([kolProfileId, walletAddress, chain])
 }
 
+model AphaBotTrade {
+  id           String   @id
+  symbol       String
+  side         String
+  leverage     Int
+  outcome      String
+  entryTime    DateTime
+  exitTime     DateTime
+  entryPrice   Float
+  exitPrice    Float
+  priceMovePct Float
+  pnlPct       Float
+  pnlUsdt      Float
+  marginUsdt   Float
+  dayIndex     Int
+
+  @@index([symbol])
+  @@index([dayIndex])
+  @@index([exitTime])
+}
+
+model AphaBotDay {
+  dayIndex Int      @id
+  syncedAt DateTime @default(now())
+}
+
+model AphaBotMeta {
+  id                Int @id @default(1)
+  generationVersion Int @default(0)
+}
+
 model KolMentionCache {
   id                   Int        @id @default(autoincrement())
   tweetId              String     @unique

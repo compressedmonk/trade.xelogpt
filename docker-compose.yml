@@ -39,9 +39,9 @@ services:
       - DEGEN_DRY_RUN=${DEGEN_DRY_RUN:-false}
       - DATABASE_URL=file:/app/data/dev.db
     volumes:
-      - dbdata:/app/data
+      # Bind mount on a fixed host path so the SQLite DB survives container
+      # rebuilds, compose project renames, `down -v`, and volume prunes.
+      # Create it once on the host: `sudo mkdir -p /opt/soltrade/data`
+      - /opt/soltrade/data:/app/data
       - /opt/degen-bot/data:/app/degen-data:ro
     restart: unless-stopped
-
-volumes:
-  dbdata:

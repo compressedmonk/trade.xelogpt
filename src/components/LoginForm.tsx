@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function LoginForm({ variant = "default" }: { variant?: "default" | "landing" }) {
-  const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,8 +20,7 @@ export function LoginForm({ variant = "default" }: { variant?: "default" | "land
       });
 
       if (res.ok) {
-        router.push("/trending");
-        router.refresh();
+        window.location.assign("/mykols");
         return;
       }
 

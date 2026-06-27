@@ -21,6 +21,14 @@ async function isAuthenticated(request: NextRequest): Promise<boolean> {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === "/") {
+    const authed = await isAuthenticated(request);
+    if (authed) {
+      return NextResponse.redirect(new URL("/mykols", request.url));
+    }
+    return NextResponse.next();
+  }
+
   if (PUBLIC_PATHS.has(pathname)) {
     return NextResponse.next();
   }
