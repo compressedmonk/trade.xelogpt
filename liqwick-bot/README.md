@@ -28,6 +28,8 @@ Alapból **`DRY_RUN=true`** — jelet detektál és naplóz, de nem küld éles 
 
 ## Adattárolás és optimization workflow
 
+**Részletes útmutató (1–4 hét):** [docs/OPTIMIZATION_WORKFLOW_HU.md](docs/OPTIMIZATION_WORKFLOW_HU.md)
+
 A bot **SQLite**-ban tartja az adatokat: `data/liqwick.db` (`DB_PATH` env). Nincs automatikus törlés — addig megmarad, amíg a fájl él.
 
 | Tábla | Tartalom |
